@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>민원 상세 - FMS Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.6; overflow: hidden; }
+
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: #14532d;
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden; position: relative; z-index: 10;
+    }
+    .sidebar-logo {
+      padding: 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #16a34a, #15803d); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .lmain { font-size: 15px; font-weight: 800; color: #fff; line-height: 1; }
+    .lsub { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 400; margin-top: 2px; }
+    .sidebar-admin { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 9px; }
+    .admin-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #16a34a, #15803d); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; }
+    .admin-name { font-size: 12.5px; font-weight: 700; color: #fff; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); }
+    .sidebar-nav { flex: 1; padding: 10px; overflow-y: auto; }
+    .nav-section-title { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 1px; padding: 10px 10px 5px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 10px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.55); cursor: pointer; transition: all 0.2s; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .nav-icon { width: 18px; text-align: center; }
+    .sidebar-bottom { padding: 10px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .sidebar-bottom a { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,0.4); text-decoration: none; transition: all 0.2s; margin-bottom: 2px; }
+    .sidebar-bottom a:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
+    .logout-btn { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: #f87171; cursor: pointer; border: none; background: none; width: 100%; font-family: inherit; }
+    .logout-btn:hover { background: rgba(239,68,68,0.1); }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* TOPBAR */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      height: 60px; display: flex; align-items: center;
+      padding: 0 24px; gap: 12px; flex-shrink: 0;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+    }
+    .mobile-menu-btn { display: none; background: none; border: none; font-size: 18px; cursor: pointer; color: #475569; }
+    .topbar-back {
+      display: flex; align-items: center; gap: 6px;
+      color: #475569; font-size: 13px; font-weight: 600;
+      text-decoration: none; transition: all 0.2s;
+      padding: 6px 10px; border-radius: 7px;
+    }
+    .topbar-back:hover { background: #f0fdf4; color: #15803d; }
+    .topbar-divider { width: 1px; height: 20px; background: #e2e8f0; }
+    .topbar-title { font-size: 15px; font-weight: 800; color: #0f172a; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .topbar-btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; gap: 7px; font-family: inherit; }
+    .btn-save { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; box-shadow: 0 4px 14px rgba(22,163,74,0.3); }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(22,163,74,0.4); }
+    .btn-delete { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-delete:hover { background: #fee2e2; }
+
+    /* SCROLL */
+    .scroll-area { flex: 1; overflow-y: auto; }
+
+    /* DETAIL LAYOUT */
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 0;
+      min-height: 100%;
+    }
+
+    /* LEFT PANEL */
+    .left-panel { padding: 24px; border-right: 1px solid #e2e8f0; }
+
+    /* TICKET HEADER */
+    .ticket-header {
+      background: linear-gradient(135deg, #14532d, #15803d);
+      border-radius: 16px; padding: 22px 24px;
+      color: #fff; margin-bottom: 20px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    }
+    .ticket-num { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+    .ticket-title { font-size: 20px; font-weight: 900; line-height: 1.3; margin-bottom: 12px; }
+    .ticket-badges { display: flex; gap: 7px; flex-wrap: wrap; }
+
+    /* INFO GRID */
+    .info-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin-bottom: 20px;
+    }
+    .info-item {
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .info-label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 5px; }
+    .info-val { font-size: 14px; font-weight: 700; color: #0f172a; }
+
+    /* SECTION */
+    .detail-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+    .detail-section-title { font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+    .desc-text { font-size: 14px; color: #334155; line-height: 1.75; }
+
+    /* PHOTO GALLERY */
+    .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 8px; }
+    .photo-item { border-radius: 10px; overflow: hidden; aspect-ratio: 1; cursor: pointer; border: 1px solid #e2e8f0; }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+    .photo-item:hover img { transform: scale(1.06); }
+    .no-photo { color: #94a3b8; font-size: 13px; padding: 20px 0; text-align: center; }
+
+    /* RESULT PHOTO UPLOAD */
+    .upload-area { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.25s; background: #f8fafc; }
+    .upload-area:hover, .upload-area.over { border-color: #16a34a; background: #f0fdf4; }
+    .upload-icon { font-size: 30px; color: #94a3b8; margin-bottom: 6px; }
+    .upload-text { font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 2px; }
+    .upload-hint { font-size: 11px; color: #94a3b8; }
+    .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap: 8px; margin-top: 12px; }
+    .preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; border: 1px solid #e2e8f0; }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-remove { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 11px; line-height: 1; }
+
+    /* TAB */
+    .tab-group { display: flex; gap: 0; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 14px; }
+    .tab-btn { flex: 1; padding: 8px 12px; border-radius: 7px; border: none; background: none; font-size: 12.5px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .tab-btn.active { background: #fff; color: #15803d; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    /* RESULT FORM */
+    .result-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-group {}
+    .form-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .form-control {
+      width: 100%; padding: 10px 13px;
+      border: 1.5px solid #e2e8f0; border-radius: 9px;
+      font-size: 13.5px; font-family: inherit; color: #1e293b;
+      background: #fff; transition: all 0.2s; outline: none;
+    }
+    .form-control:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+    textarea.form-control { resize: vertical; min-height: 90px; }
+    select.form-control {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+    }
+
+    /* RESULT PREVIEW */
+    .result-preview { padding: 16px; border-radius: 12px; }
+    .result-preview.completed { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .result-preview.in_progress { background: #fffbeb; border: 1px solid #fed7aa; }
+    .result-preview.rejected { background: #fef2f2; border: 1px solid #fecaca; }
+    .result-preview.received { background: #f8fafc; border: 1px solid #e2e8f0; }
+    .result-preview-title { font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+    .result-preview.completed .result-preview-title { color: #15803d; }
+    .result-preview.rejected .result-preview-title { color: #dc2626; }
+    .result-preview.in_progress .result-preview-title { color: #92400e; }
+
+    /* RIGHT PANEL */
+    .right-panel {
+      background: #f8fafc;
+      display: flex; flex-direction: column; overflow-y: auto;
+      height: 100%;
+    }
+    .right-section { padding: 20px; border-bottom: 1px solid #e2e8f0; }
+    .right-title { font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+    /* STATUS FLOW */
+    .status-flow { display: flex; flex-direction: column; gap: 8px; }
+    .status-option {
+      border: 2px solid #e2e8f0; border-radius: 12px;
+      padding: 12px 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 12px;
+      transition: all 0.2s; background: #fff;
+    }
+    .status-option:hover { border-color: var(--opt-color, #16a34a); background: var(--opt-bg, #f0fdf4); }
+    .status-option.selected { border-color: var(--opt-color, #16a34a); background: var(--opt-bg, #f0fdf4); }
+    .status-option-icon { font-size: 20px; flex-shrink: 0; }
+    .status-option-label { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+    .status-option-desc { font-size: 11px; color: #94a3b8; }
+    .status-option-check { margin-left: auto; width: 20px; height: 20px; border-radius: 50%; background: var(--opt-color, #16a34a); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; opacity: 0; transition: opacity 0.2s; }
+    .status-option.selected .status-option-check { opacity: 1; }
+
+    /* ASSIGN DROPDOWN */
+    .assign-select {
+      width: 100%; padding: 10px 30px 10px 12px;
+      border: 1.5px solid #e2e8f0; border-radius: 9px;
+      font-size: 13px; font-family: inherit; color: #1e293b;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+      appearance: none; outline: none; cursor: pointer; transition: all 0.2s;
+    }
+    .assign-select:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+
+    /* SAVE BTN */
+    .save-all-btn {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff; font-size: 15px; font-weight: 800;
+      border: none; border-radius: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      transition: all 0.3s; font-family: inherit;
+      box-shadow: 0 6px 20px rgba(22,163,74,0.3);
+    }
+    .save-all-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(22,163,74,0.4); }
+    .save-all-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* BADGE */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 100px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .badge-received { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .badge-in_progress { background: rgba(245,158,11,0.25); color: #fcd34d; }
+    .badge-completed { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+    .badge-rejected { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .badge-defect { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .badge-complaint { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+    .badge-urgent { background: rgba(167,139,250,0.25); color: #c4b5fd; font-weight: 900; }
+
+    /* LIGHTBOX */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9998; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .lightbox.active { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; object-fit: contain; }
+    .lightbox-close { position: absolute; top: 20px; right: 24px; background: rgba(255,255,255,0.1); border: none; color: #fff; font-size: 24px; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+
+    /* TOAST */
+    .toast-wrap { position: fixed; top: 70px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 13px 16px; display: flex; align-items: flex-start; gap: 10px; min-width: 260px; border-left: 3px solid #16a34a; animation: slideIn 0.3s ease; }
+    .toast.success { border-color: #10b981; }
+    .toast.error { border-color: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* MOBILE */
+    .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9; }
+    .mobile-overlay.active { display: block; }
+
+    @media (max-width: 1100px) {
+      .detail-layout { grid-template-columns: 1fr; }
+      .right-panel { height: auto; overflow-y: visible; border-top: 2px solid #e2e8f0; }
+    }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; left: -240px; top: 0; bottom: 0; z-index: 100; transition: left 0.3s; }
+      .sidebar.open { left: 0; }
+      .mobile-menu-btn { display: block; }
+      .left-panel { padding: 16px; }
+      .info-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .ticket-header { flex-direction: column; }
+    }
+  </style>
+  <!-- Supabase: ① supabase-js → ② config → ③ db.js (로드 순서 중요) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div>
+        <div class="lmain">FMS Admin</div>
+        <div class="lsub">시설관리 관리자</div>
+      </div>
+    </div>
+    <div class="sidebar-admin">
+      <div class="admin-avatar" id="adminAvatar">A</div>
+      <div>
+        <div class="admin-name" id="adminName">관리자</div>
+        <div class="admin-role" id="adminRole">슈퍼 관리자</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">메인</div>
+      <a href="admin-dashboard.html" class="nav-item active">
+        <span class="nav-icon">📊</span> 대시보드
+      </a>
+      <a href="admin-stats.html" class="nav-item">
+        <span class="nav-icon">📈</span> 통계 분석
+      </a>
+      <div class="nav-section-title">시스템</div>
+      <a href="index.html" class="nav-item" target="_blank">
+        <span class="nav-icon">🌐</span> 사용자 사이트
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> 로그아웃
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <button class="mobile-menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+      <a href="admin-dashboard.html" class="topbar-back"><i class="fas fa-arrow-left"></i> 목록</a>
+      <div class="topbar-divider"></div>
+      <div class="topbar-title" id="topbarTitle">민원 상세</div>
+      <div class="topbar-actions">
+        <button class="topbar-btn btn-delete" onclick="deleteComplaint()"><i class="fas fa-trash-alt"></i> 삭제</button>
+        <button class="topbar-btn btn-save" id="saveBtn" onclick="saveAll()"><i class="fas fa-save"></i> 저장</button>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div id="pageContent">
+        <div style="display:flex; align-items:center; justify-content:center; padding:100px; gap:12px; color:#94a3b8;">
+          <div style="width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+          <span>불러오는 중...</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="첨부 사진">
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  // 인증 확인 (Supabase Auth 세션)
+  (async () => {
+    const { data } = await window.sbClient.auth.getSession();
+    if (!data || !data.session) { location.href = 'admin-login.html'; return; }
+    const email = data.session.user.email || '관리자';
+    const name = (data.session.user.user_metadata && data.session.user.user_metadata.name) || email.split('@')[0];
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('adminName', name);
+    set('adminRole', '관리자');
+    set('adminAvatar', name[0].toUpperCase());
+  })();
+
+  async function logout() {
+    if (confirm('로그아웃 하시겠습니까?')) { await window.sbClient.auth.signOut(); location.href = 'admin-login.html'; }
+  }
+  function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('mobileOverlay').classList.add('active'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('mobileOverlay').classList.remove('active'); }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const complaintId = urlParams.get('id');
+  if (!complaintId) { location.href = 'admin-dashboard.html'; }
+
+  const STATUS_LABEL = { received:'접수', in_progress:'처리 중', completed:'완료', rejected:'반려' };
+  const STATUS_BADGE = { received:'badge-received', in_progress:'badge-in_progress', completed:'badge-completed', rejected:'badge-rejected' };
+  const TYPE_LABEL = { defect:'하자 신고', complaint:'민원 접수' };
+  const CAT_LABEL = { construction:'건축·인테리어', equipment:'설비·공조', electric:'전기·통신', cleaning:'환경·청소', other:'기타' };
+  const PRI_LABEL = { low:'낮음', medium:'보통', high:'높음', urgent:'긴급' };
+  const PRI_ICON = { low:'🔵', medium:'🟢', high:'🟠', urgent:'🔴' };
+
+  let currentItem = null;
+  let existingResultPhotos = [];
+  let newResultFiles = [];
+
+  async function loadDetail() {
+    try {
+      const res = await fetch(`tables/complaints/${complaintId}`);
+      if (!res.ok) throw new Error('Not found');
+      currentItem = await res.json();
+      renderDetail(currentItem);
+    } catch(e) {
+      document.getElementById('pageContent').innerHTML = `<div style="text-align:center;padding:80px;color:#94a3b8;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div style="font-size:18px;font-weight:700;color:#334155;margin-bottom:8px;">데이터를 찾을 수 없습니다</div><a href="admin-dashboard.html" style="color:#2563eb;font-size:14px;">← 목록으로 돌아가기</a></div>`;
+    }
+  }
+
+  function renderDetail(item) {
+    document.getElementById('topbarTitle').textContent = item.title || '민원 상세';
+
+    const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR') : '—';
+    const completedAt = item.completed_at ? new Date(item.completed_at).toLocaleString('ko-KR') : '—';
+
+    const getPhotos = (urls) => {
+      try {
+        const arr = typeof urls === 'string' ? JSON.parse(urls) : (urls || []);
+        if (!Array.isArray(arr) || arr.length === 0) return '<div class="no-photo">첨부 사진 없음</div>';
+        return `<div class="photo-gallery">${arr.map(u => `<div class="photo-item" onclick="openLightbox('${u}')"><img src="${u}" alt="사진"></div>`).join('')}</div>`;
+      } catch(e) { return '<div class="no-photo">첨부 사진 없음</div>'; }
+    };
+
+    // Result section content
+    let resultPreviewContent = '';
+    if (item.status === 'completed') {
+      resultPreviewContent = `<div class="result-preview completed">
+        <div class="result-preview-title">✅ 처리 완료</div>
+        <div style="font-size:13px;color:#15803d;line-height:1.65;">
+          ${item.completed_at ? `<strong>완료 일시:</strong> ${completedAt}<br>` : ''}
+          ${item.assigned_to ? `<strong>담당자:</strong> ${item.assigned_to}<br>` : ''}
+          ${item.result_note ? `<br>${item.result_note}` : '처리 결과 내용이 없습니다.'}
+        </div>
+        ${getPhotos(item.result_photo_urls)}
+      </div>`;
+    } else if (item.status === 'rejected') {
+      resultPreviewContent = `<div class="result-preview rejected">
+        <div class="result-preview-title">🚫 반려 처리</div>
+        <div style="font-size:13px;color:#dc2626;">${item.admin_memo || item.result_note || '반려 처리되었습니다.'}</div>
+      </div>`;
+    } else if (item.status === 'in_progress') {
+      resultPreviewContent = `<div class="result-preview in_progress">
+        <div class="result-preview-title">⚙️ 처리 중</div>
+        <div style="font-size:13px;color:#92400e;">담당자 <strong>${item.assigned_to||'배정 중'}</strong>이 처리하고 있습니다.</div>
+      </div>`;
+    } else {
+      resultPreviewContent = `<div class="result-preview received">
+        <div class="result-preview-title" style="color:#475569;">⏳ 접수 완료 - 처리 대기 중</div>
+        <div style="font-size:13px;color:#64748b;">담당자 배정 후 처리가 시작됩니다.</div>
+      </div>`;
+    }
+
+    document.getElementById('pageContent').innerHTML = `
+      <div class="detail-layout">
+        <!-- LEFT -->
+        <div class="left-panel">
+          <!-- TICKET HEADER -->
+          <div class="ticket-header">
+            <div>
+              <div class="ticket-num">${item.ticket_number||'—'}</div>
+              <div class="ticket-title">${item.title||'—'}</div>
+              <div class="ticket-badges">
+                <span class="badge ${STATUS_BADGE[item.status]||'badge-received'}">${STATUS_LABEL[item.status]||'접수'}</span>
+                <span class="badge ${item.type==='defect'?'badge-defect':'badge-complaint'}">${TYPE_LABEL[item.type]||'—'}</span>
+                <span class="badge" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);">${CAT_LABEL[item.category]||'—'}</span>
+                ${item.priority==='urgent'?`<span class="badge badge-urgent">🔴 ${PRI_LABEL[item.priority]}</span>`:''}
+              </div>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:4px;">접수일시</div>
+              <div style="font-size:12px; color:rgba(255,255,255,0.7);">${createdAt}</div>
+            </div>
+          </div>
+
+          <!-- INFO GRID -->
+          <div class="info-grid">
+            <div class="info-item"><div class="info-label">접수자</div><div class="info-val">${item.submitter_name||'—'}</div></div>
+            <div class="info-item"><div class="info-label">연락처</div><div class="info-val">${item.submitter_contact||'—'}</div></div>
+            <div class="info-item"><div class="info-label">부서</div><div class="info-val">${item.department||'—'}${item.floor?' / '+item.floor:''}</div></div>
+            <div class="info-item"><div class="info-label">위치</div><div class="info-val">${item.location||'—'}</div></div>
+            <div class="info-item"><div class="info-label">담당자</div><div class="info-val">${item.assigned_to||'<span style="color:#f59e0b;">미배정</span>'}</div></div>
+            <div class="info-item"><div class="info-label">완료 일시</div><div class="info-val">${completedAt}</div></div>
+          </div>
+
+          <!-- DESCRIPTION -->
+          <div class="detail-section">
+            <div class="detail-section-title">📝 접수 내용</div>
+            <div class="desc-text">${item.description||'—'}</div>
+          </div>
+
+          <!-- PHOTOS -->
+          <div class="detail-section">
+            <div class="detail-section-title">📷 접수 사진</div>
+            ${getPhotos(item.photo_urls)}
+          </div>
+
+          <!-- RESULT -->
+          <div class="detail-section">
+            <div class="detail-section-title">📋 처리 결과</div>
+            <div class="tab-group" style="margin-bottom:14px;">
+              <button class="tab-btn active" id="tab-preview" onclick="switchTab('preview')">📄 현재 결과</button>
+              <button class="tab-btn" id="tab-edit" onclick="switchTab('edit')">✏️ 결과 입력</button>
+            </div>
+            <div id="resultPreview">${resultPreviewContent}</div>
+            <div id="resultEdit" style="display:none;">
+              <div class="result-form">
+                <div class="form-group">
+                  <label class="form-label">처리 결과 내용</label>
+                  <textarea id="resultNote" class="form-control" rows="4" placeholder="처리 결과를 상세히 입력하세요...">${item.result_note||''}</textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">처리 결과 사진</label>
+                  <div class="upload-area" id="resultUploadArea" onclick="document.getElementById('resultFileInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">클릭하거나 파일을 드래그하세요</div>
+                    <div class="upload-hint">JPG, PNG, GIF · 최대 10MB · 최대 5장</div>
+                  </div>
+                  <input type="file" id="resultFileInput" accept="image/*" multiple style="display:none;" onchange="handleResultFiles(this.files)">
+                  <div class="preview-grid" id="resultPreviewGrid"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">처리 완료 일시</label>
+                  <input type="datetime-local" id="completedAt" class="form-control" value="${item.completed_at ? new Date(item.completed_at).toISOString().slice(0,16) : ''}">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">관리자 메모 (내부용)</label>
+                  <textarea id="adminMemo" class="form-control" rows="3" placeholder="내부 메모 (접수자에게 미공개)...">${item.admin_memo||''}</textarea>
+                </div>
+                <div style="background:#fffbeb; border:1px solid #fed7aa; border-radius:10px; padding:12px; font-size:12px; color:#92400e; display:flex; gap:8px; align-items:flex-start;">
+                  <span style="font-size:15px;">💡</span>
+                  <span>처리 결과는 접수자가 상태 조회 시 확인할 수 있습니다. 완료 처리 시 우측에서 상태를 '처리 완료'로 변경해 주세요.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-panel">
+          <!-- STATUS -->
+          <div class="right-section">
+            <div class="right-title">🔄 처리 상태 변경</div>
+            <div class="status-flow">
+              <div class="status-option ${item.status==='received'?'selected':''}" id="opt-received"
+                style="--opt-color:#3b82f6; --opt-bg:#eff6ff;" onclick="selectStatus('received')">
+                <span class="status-option-icon">📥</span>
+                <div>
+                  <div class="status-option-label">접수 완료</div>
+                  <div class="status-option-desc">신규 접수 상태</div>
+                </div>
+                <div class="status-option-check">✓</div>
+              </div>
+              <div class="status-option ${item.status==='in_progress'?'selected':''}" id="opt-in_progress"
+                style="--opt-color:#f59e0b; --opt-bg:#fffbeb;" onclick="selectStatus('in_progress')">
+                <span class="status-option-icon">⚙️</span>
+                <div>
+                  <div class="status-option-label">처리 중</div>
+                  <div class="status-option-desc">담당자 배정 및 처리 중</div>
+                </div>
+                <div class="status-option-check">✓</div>
+              </div>
+              <div class="status-option ${item.status==='completed'?'selected':''}" id="opt-completed"
+                style="--opt-color:#10b981; --opt-bg:#f0fdf4;" onclick="selectStatus('completed')">
+                <span class="status-option-icon">✅</span>
+                <div>
+                  <div class="status-option-label">처리 완료</div>
+                  <div class="status-option-desc">현장 처리 완료</div>
+                </div>
+                <div class="status-option-check">✓</div>
+              </div>
+              <div class="status-option ${item.status==='rejected'?'selected':''}" id="opt-rejected"
+                style="--opt-color:#ef4444; --opt-bg:#fef2f2;" onclick="selectStatus('rejected')">
+                <span class="status-option-icon">🚫</span>
+                <div>
+                  <div class="status-option-label">반려</div>
+                  <div class="status-option-desc">처리 불가 또는 중복</div>
+                </div>
+                <div class="status-option-check">✓</div>
+              </div>
+            </div>
+            <input type="hidden" id="selectedStatus" value="${item.status||'received'}">
+          </div>
+
+          <!-- ASSIGN -->
+          <div class="right-section">
+            <div class="right-title">👤 담당자 배정</div>
+            <select class="assign-select" id="assignedTo">
+              <option value="">담당자 선택...</option>
+              <option value="김전기" ${item.assigned_to==='김전기'?'selected':''}>김전기 (전기·통신팀)</option>
+              <option value="이설비" ${item.assigned_to==='이설비'?'selected':''}>이설비 (설비·공조팀)</option>
+              <option value="박청소" ${item.assigned_to==='박청소'?'selected':''}>박청소 (환경미화팀)</option>
+              <option value="최관리" ${item.assigned_to==='최관리'?'selected':''}>최관리 (시설관리실)</option>
+              <option value="manager1" ${item.assigned_to==='manager1'?'selected':''}>매니저1 (ENG)</option>
+              <option value="manager2" ${item.assigned_to==='manager2'?'selected':''}>매니저2 (CLEAN)</option>
+            </select>
+          </div>
+
+          <!-- PRIORITY -->
+          <div class="right-section">
+            <div class="right-title">⚡ 우선순위</div>
+            <select class="assign-select" id="prioritySelect">
+              <option value="low" ${item.priority==='low'?'selected':''}>🔵 낮음</option>
+              <option value="medium" ${item.priority==='medium'?'selected':''}>🟢 보통</option>
+              <option value="high" ${item.priority==='high'?'selected':''}>🟠 높음</option>
+              <option value="urgent" ${item.priority==='urgent'?'selected':''}>🔴 긴급</option>
+            </select>
+          </div>
+
+          <!-- SAVE -->
+          <div class="right-section" style="border-bottom:none;">
+            <button class="save-all-btn" id="saveAllBtn" onclick="saveAll()">
+              <i class="fas fa-save"></i> 변경사항 저장
+            </button>
+            <div style="margin-top:10px; font-size:11px; color:#94a3b8; text-align:center;">저장 후 접수자에게 상태가 반영됩니다</div>
+          </div>
+        </div>
+      </div>`;
+
+    existingResultPhotos = (() => {
+      try {
+        const raw = item.result_photo_urls;
+        const arr = typeof raw === 'string' ? JSON.parse(raw) : (raw || []);
+        return Array.isArray(arr) ? arr : [];
+      } catch(e) { return []; }
+    })();
+    newResultFiles = [];
+    renderResultPreviews();
+    const resultUploadArea = document.getElementById('resultUploadArea');
+    resultUploadArea.addEventListener('dragover', e => { e.preventDefault(); resultUploadArea.classList.add('over'); });
+    resultUploadArea.addEventListener('dragleave', () => resultUploadArea.classList.remove('over'));
+    resultUploadArea.addEventListener('drop', e => { e.preventDefault(); resultUploadArea.classList.remove('over'); handleResultFiles(e.dataTransfer.files); });
+  }
+
+  function handleResultFiles(files) {
+    const MAX = 5;
+    const remaining = MAX - existingResultPhotos.length - newResultFiles.length;
+    Array.from(files).slice(0, Math.max(0, remaining)).forEach(f => {
+      if (!f.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        newResultFiles.push({ file: f, url: ev.target.result });
+        renderResultPreviews();
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function renderResultPreviews() {
+    const grid = document.getElementById('resultPreviewGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    existingResultPhotos.forEach((url, idx) => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="${url}" alt="처리 결과 사진"><button class="preview-remove" onclick="removeExistingResultPhoto(${idx})">✕</button>`;
+      grid.appendChild(div);
+    });
+    newResultFiles.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="${item.url}" alt="미리보기"><button class="preview-remove" onclick="removeNewResultFile(${idx})">✕</button>`;
+      grid.appendChild(div);
+    });
+  }
+
+  function removeExistingResultPhoto(idx) { existingResultPhotos.splice(idx, 1); renderResultPreviews(); }
+  function removeNewResultFile(idx) { newResultFiles.splice(idx, 1); renderResultPreviews(); }
+
+  function switchTab(tab) {
+    document.getElementById('tab-preview').classList.toggle('active', tab==='preview');
+    document.getElementById('tab-edit').classList.toggle('active', tab==='edit');
+    document.getElementById('resultPreview').style.display = tab==='preview' ? '' : 'none';
+    document.getElementById('resultEdit').style.display = tab==='edit' ? '' : 'none';
+  }
+
+  let currentStatus = '';
+  function selectStatus(status) {
+    currentStatus = status;
+    document.querySelectorAll('.status-option').forEach(o => o.classList.remove('selected'));
+    document.getElementById('opt-' + status)?.classList.add('selected');
+    document.getElementById('selectedStatus').value = status;
+    if (status === 'completed') {
+      const now = new Date().toISOString().slice(0,16);
+      const el = document.getElementById('completedAt');
+      if (el && !el.value) el.value = now;
+      switchTab('edit');
+    }
+  }
+
+  async function saveAll() {
+    const status = document.getElementById('selectedStatus').value;
+    const assignedTo = document.getElementById('assignedTo').value;
+    const priority = document.getElementById('prioritySelect').value;
+    const resultNoteEl = document.getElementById('resultNote');
+    const completedAtEl = document.getElementById('completedAt');
+    const adminMemoEl = document.getElementById('adminMemo');
+    const resultNote = resultNoteEl ? resultNoteEl.value.trim() : '';
+    const completedAtVal = completedAtEl ? completedAtEl.value : '';
+    const adminMemo = adminMemoEl ? adminMemoEl.value.trim() : '';
+
+    if (status === 'completed' && !resultNote) {
+      showToast('⚠️ 주의', '처리 완료 시 처리 결과 내용을 입력해 주세요.', 'error');
+      switchTab('edit');
+      return;
+    }
+
+    const btn = document.getElementById('saveAllBtn') || document.getElementById('saveBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...'; }
+
+    let resultPhotoUrls = existingResultPhotos;
+    try {
+      if (newResultFiles.length && window.uploadPhotos) {
+        const uploaded = await window.uploadPhotos(newResultFiles.map(f => f.file));
+        resultPhotoUrls = existingResultPhotos.concat(uploaded);
+      }
+    } catch (err) {
+      console.error('처리 결과 사진 업로드 실패:', err);
+      showToast('⚠️ 사진 업로드 실패', '사진 없이 나머지 내용만 저장합니다.', 'warning');
+    }
+
+    const patch = { status, assigned_to: assignedTo, priority, result_photo_urls: resultPhotoUrls };
+    if (resultNote) patch.result_note = resultNote;
+    if (adminMemo) patch.admin_memo = adminMemo;
+    if (status === 'completed') {
+      patch.completed_at = completedAtVal ? new Date(completedAtVal).toISOString() : new Date().toISOString();
+    }
+
+    try {
+      const res = await fetch(`tables/complaints/${complaintId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
+      if (!res.ok) throw new Error('API 오류');
+      showToast('✅ 저장 완료', '변경사항이 저장되었습니다.', 'success');
+      setTimeout(() => loadDetail(), 1000);
+    } catch(e) {
+      showToast('❌ 오류 발생', '저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> 변경사항 저장'; }
+    }
+  }
+
+  async function deleteComplaint() {
+    if (!confirm('이 민원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    try {
+      await fetch(`tables/complaints/${complaintId}`, { method: 'DELETE' });
+      showToast('삭제 완료', '민원이 삭제되었습니다.', 'success');
+      setTimeout(() => location.href = 'admin-dashboard.html', 1200);
+    } catch(e) {
+      showToast('오류', '삭제 중 오류가 발생했습니다.', 'error');
+    }
+  }
+
+  function openLightbox(url) {
+    document.getElementById('lightboxImg').src = url;
+    document.getElementById('lightbox').classList.add('active');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
+
+  function showToast(title, msg, type='info') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = `<div><div style="font-size:13px;font-weight:700;color:#0f172a;">${title}</div><div style="font-size:12px;color:#64748b;margin-top:2px;">${msg}</div></div>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  loadDetail();
+</script>
+</body>
+</html>

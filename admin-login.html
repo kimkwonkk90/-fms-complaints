@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 로그인 - FMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #f0fdf4; color: #14532d; line-height: 1.6; }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 520px;
+    }
+
+    /* LEFT PANEL */
+    .left-panel {
+      background: linear-gradient(135deg, #052e16 0%, #14532d 40%, #15803d 70%, #16a34a 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 60px;
+      position: relative; overflow: hidden;
+    }
+    .left-panel::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        radial-gradient(circle at 25% 30%, rgba(255,255,255,0.12) 0%, transparent 50%),
+        radial-gradient(circle at 75% 70%, rgba(255,255,255,0.08) 0%, transparent 40%);
+    }
+    .left-panel::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+    .left-inner { position: relative; z-index: 1; text-align: center; max-width: 480px; }
+    .left-logo {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; margin: 0 auto 32px;
+      box-shadow: 0 12px 40px rgba(100,116,139,0.4);
+    }
+    .left-title { font-size: clamp(28px,3vw,42px); font-weight: 900; letter-spacing: -1px; margin-bottom: 16px; line-height: 1.2; }
+    .left-title .accent { background: linear-gradient(90deg, #e2e8f0, #cbd5e1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .left-desc { font-size: 16px; color: rgba(255,255,255,0.5); line-height: 1.75; margin-bottom: 48px; }
+    .left-features { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+    .feature-item { display: flex; align-items: center; gap: 12px; }
+    .feature-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; background: rgba(255,255,255,0.08); }
+    .feature-text { font-size: 14px; color: rgba(255,255,255,0.65); font-weight: 500; }
+
+    /* RIGHT PANEL */
+    .right-panel {
+      background: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 52px;
+      position: relative;
+    }
+    .back-btn {
+      position: absolute; top: 24px; left: 24px;
+      display: flex; align-items: center; gap: 7px;
+      color: #64748b; font-size: 13px; font-weight: 600;
+      text-decoration: none; transition: all 0.2s;
+      padding: 8px 12px; border-radius: 8px;
+    }
+    .back-btn:hover { background: #f0fdf4; color: #15803d; }
+
+    .login-box { width: 100%; max-width: 380px; }
+    .login-title { font-size: 26px; font-weight: 900; color: #0f172a; margin-bottom: 8px; }
+    .login-desc { font-size: 14px; color: #64748b; margin-bottom: 36px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 7px; }
+    .input-wrap { position: relative; }
+    .input-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
+    .form-control {
+      width: 100%; padding: 13px 14px 13px 40px;
+      border: 1.5px solid #e2e8f0; border-radius: 11px;
+      font-size: 14px; font-family: inherit; color: #1e293b;
+      background: #f8fafc; transition: all 0.25s; outline: none;
+    }
+    .form-control:focus { border-color: #16a34a; background: #fff; box-shadow: 0 0 0 4px rgba(22,163,74,0.1); }
+    .pw-toggle { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 4px; }
+    .pw-toggle:hover { color: #475569; }
+
+    .error-msg {
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 10px; padding: 12px 16px;
+      font-size: 13px; color: #dc2626; font-weight: 600;
+      display: none; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .error-msg.hidden { display: none; }
+
+    .login-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff; font-size: 16px; font-weight: 800;
+      border: none; border-radius: 11px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.3s; font-family: inherit;
+      box-shadow: 0 8px 24px rgba(22,163,74,0.35);
+      margin-top: 8px;
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(22,163,74,0.45); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .demo-info {
+      margin-top: 32px;
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1px solid #86efac; border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .demo-title { font-size: 12px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .demo-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+    .demo-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .demo-label { font-size: 12px; font-weight: 600; color: #475569; }
+    .demo-cred { font-size: 12px; font-family: monospace; color: #1e293b; background: #fff; padding: 3px 8px; border-radius: 5px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+    .demo-cred:hover { border-color: #16a34a; color: #15803d; }
+
+    .footer-note { margin-top: 28px; text-align: center; font-size: 12px; color: #94a3b8; }
+
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { min-height: 100vh; padding: 40px 28px; }
+    }
+  </style>
+  <!-- Supabase: ① supabase-js → ② config → ③ db.js (로드 순서 중요) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+
+<div class="page">
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="left-inner">
+      <div class="left-logo">🏢</div>
+      <h1 class="left-title">
+        시설관리<br><span class="accent">민원 관리 시스템</span>
+      </h1>
+      <p class="left-desc">
+        관리자 전용 포털입니다.<br>
+        민원 접수부터 처리 완료까지<br>
+        모든 과정을 효율적으로 관리하세요.
+      </p>
+      <div class="left-features">
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">실시간 민원 현황 대시보드</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⚙️</div>
+          <div class="feature-text">처리 상태 변경 및 담당자 배정</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📈</div>
+          <div class="feature-text">월별 통계 및 분석 리포트</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📷</div>
+          <div class="feature-text">처리 결과 사진 첨부 기능</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+    <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> 사용자 사이트</a>
+    <div class="login-box">
+      <h2 class="login-title">🛡️ 관리자 로그인</h2>
+      <p class="login-desc">담당자 계정으로 로그인해 주세요</p>
+
+      <div class="error-msg hidden" id="errorMsg">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errorText">아이디 또는 비밀번호가 올바르지 않습니다.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <div class="input-wrap">
+          <i class="fas fa-user input-icon"></i>
+          <input type="email" id="username" class="form-control" placeholder="관리자 이메일 입력"
+            autocomplete="username" onkeydown="if(event.key==='Enter') login()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="password" class="form-control" placeholder="비밀번호 입력"
+            onkeydown="if(event.key==='Enter') login()">
+          <button class="pw-toggle" type="button" onclick="togglePw()"><i class="fas fa-eye" id="pwIcon"></i></button>
+        </div>
+      </div>
+
+      <button class="login-btn" id="loginBtn" onclick="login()">
+        <i class="fas fa-sign-in-alt"></i> 로그인
+      </button>
+
+      <div class="demo-info">
+        <div class="demo-title">🔑 관리자 계정 안내</div>
+        <div class="demo-item">
+          <span class="demo-label" style="line-height:1.6;">계정은 Supabase 대시보드 &gt; Authentication &gt; Users 에서 발급됩니다. 발급받은 이메일/비밀번호로 로그인하세요.</span>
+        </div>
+      </div>
+
+      <p class="footer-note">© 2026 FMS 시설관리 민원시스템</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 이미 로그인된 경우 → 대시보드로
+  (async () => {
+    try {
+      const { data } = await window.sbClient.auth.getSession();
+      if (data && data.session) location.href = 'admin-dashboard.html';
+    } catch (e) { /* 미로그인 상태 */ }
+  })();
+
+  function togglePw() {
+    const pw = document.getElementById('password');
+    const icon = document.getElementById('pwIcon');
+    if (pw.type === 'password') {
+      pw.type = 'text';
+      icon.className = 'fas fa-eye-slash';
+    } else {
+      pw.type = 'password';
+      icon.className = 'fas fa-eye';
+    }
+  }
+
+  async function login() {
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errMsg = document.getElementById('errorMsg');
+    const btn = document.getElementById('loginBtn');
+
+    if (!email || !password) {
+      errMsg.classList.remove('hidden');
+      document.getElementById('errorText').textContent = '이메일과 비밀번호를 입력해 주세요.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 로그인 중...';
+
+    const { error } = await window.sbClient.auth.signInWithPassword({ email, password });
+
+    if (!error) {
+      btn.innerHTML = '<i class="fas fa-check"></i> 로그인 완료!';
+      btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      setTimeout(() => location.href = 'admin-dashboard.html', 600);
+    } else {
+      errMsg.classList.remove('hidden');
+      document.getElementById('errorText').textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> 로그인';
+    }
+  }
+</script>
+</body>
+</html>

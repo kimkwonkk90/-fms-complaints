@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>민원 접수 - FMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #f0fdf4; color: #14532d; line-height: 1.6; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── HEADER ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e2e8f0;
+      height: 64px;
+      display: flex; align-items: center;
+      padding: 0 40px;
+      justify-content: space-between;
+      box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .logo-text .logo-main { font-size: 16px; font-weight: 800; color: #15803d; line-height: 1; }
+    .logo-text .logo-sub { font-size: 10px; color: #94a3b8; font-weight: 400; }
+    .nav { display: flex; align-items: center; gap: 4px; }
+    .nav a {
+      padding: 7px 14px; border-radius: 7px;
+      font-size: 13.5px; font-weight: 500; color: #475569;
+      transition: all 0.2s;
+    }
+    .nav a:hover { background: #f0fdf4; color: #15803d; }
+    .nav a.active { background: #f0fdf4; color: #15803d; font-weight: 700; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 8px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #475569; border-radius: 2px; }
+    .mobile-nav { display: none; border-top: 1px solid #e2e8f0; padding: 12px; flex-direction: column; gap: 4px; background: #fff; }
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a { padding: 10px 14px; border-radius: 7px; font-size: 14px; font-weight: 500; color: #475569; display: flex; align-items: center; gap: 8px; }
+    .mobile-nav a:hover { background: #f1f5f9; }
+
+    /* ── HERO BANNER ── */
+    .page-hero {
+      background: linear-gradient(135deg, #14532d 0%, #15803d 60%, #16a34a 100%);
+      color: #fff;
+      padding: 52px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .page-hero-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; z-index: 1;
+      gap: 24px;
+    }
+    .page-hero h1 { font-size: clamp(24px,3vw,36px); font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .page-hero p { font-size: 15px; color: rgba(255,255,255,0.75); max-width: 500px; }
+    .page-hero-steps {
+      display: flex; align-items: center; gap: 0;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .phero-step {
+      padding: 12px 20px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.15);
+      min-width: 80px;
+      transition: all 0.2s;
+    }
+    .phero-step:last-child { border-right: none; }
+    .phero-step.active { background: rgba(255,255,255,0.2); }
+    .phero-step .ps-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+      margin: 0 auto 5px;
+      color: rgba(255,255,255,0.7);
+    }
+    .phero-step.active .ps-num { background: #fff; color: #15803d; border-color: #fff; }
+    .phero-step.done .ps-num { background: #4ade80; border-color: #4ade80; color: #fff; }
+    .phero-step .ps-label { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 600; }
+    .phero-step.active .ps-label { color: #fff; }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* ── FORM CARD ── */
+    .form-card {
+      background: #fff;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    .form-card-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .form-step-badge {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 900; color: #fff;
+      flex-shrink: 0;
+    }
+    .form-card-title { font-size: 17px; font-weight: 800; color: #0f172a; }
+    .form-card-body { padding: 32px; }
+
+    /* ── 유형 선택 ── */
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .type-btn {
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 24px 20px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.25s;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .type-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: var(--type-color, #eff6ff);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .type-btn:hover::before, .type-btn.selected::before { opacity: 1; }
+    .type-btn:hover { border-color: var(--type-border, #16a34a); }
+    .type-btn.selected {
+      border-color: var(--type-border, #16a34a);
+      box-shadow: 0 0 0 3px var(--type-shadow, rgba(22,163,74,0.12));
+    }
+    .type-btn-inner { position: relative; z-index: 1; }
+    .type-icon { font-size: 36px; display: block; margin-bottom: 10px; }
+    .type-name { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
+    .type-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .type-check {
+      position: absolute; top: 12px; right: 12px;
+      width: 20px; height: 20px;
+      background: var(--type-border, #16a34a);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #fff;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 2;
+    }
+    .type-btn.selected .type-check { opacity: 1; }
+
+    /* ── 카테고리 ── */
+    .cat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+    .cat-btn {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 8px;
+      cursor: pointer; text-align: center;
+      transition: all 0.2s; background: #fff;
+      font-size: 12px; font-weight: 600; color: #475569;
+    }
+    .cat-btn i, .cat-btn .cb-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+    .cat-btn:hover { border-color: #16a34a; color: #15803d; background: #f0fdf4; }
+    .cat-btn.active { border-color: #15803d; background: #f0fdf4; color: #14532d; }
+
+    /* ── 우선순위 ── */
+    .pri-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+    .pri-btn {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 8px;
+      cursor: pointer; text-align: center;
+      transition: all 0.2s; background: #fff;
+      font-size: 12px; font-weight: 600; color: #475569;
+    }
+    .pri-icon { font-size: 16px; display: block; margin-bottom: 4px; }
+    .pri-btn.active-low    { border-color: #94a3b8; background: #f8fafc; color: #475569; }
+    .pri-btn.active-medium { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+    .pri-btn.active-high   { border-color: #d97706; background: #fffbeb; color: #92400e; }
+    .pri-btn.active-urgent { border-color: #7c3aed; background: #f5f3ff; color: #6d28d9; }
+
+    /* ── 폼 요소 ── */
+    .form-section { margin-bottom: 36px; }
+    .form-section-title {
+      font-size: 13px; font-weight: 700; color: #15803d;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #dcfce7;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    .form-label .req { color: #ef4444; margin-left: 3px; }
+    .form-control {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 9px;
+      font-size: 14px; font-family: inherit; color: #1e293b;
+      background: #fff; transition: all 0.2s; outline: none;
+    }
+    .form-control:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+    .form-control::placeholder { color: #cbd5e1; }
+    textarea.form-control { resize: vertical; min-height: 120px; }
+    select.form-control {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
+    }
+    .form-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+    .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; display: none; }
+    .form-control.error { border-color: #ef4444; }
+    .form-control.error + .form-error { display: block; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+    /* ── 파일 업로드 ── */
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      background: #f8fafc;
+    }
+    .upload-area:hover, .upload-area.over {
+      border-color: #16a34a; background: #f0fdf4;
+    }
+    .upload-icon { font-size: 40px; color: #94a3b8; margin-bottom: 10px; }
+    .upload-text { font-size: 14px; color: #475569; font-weight: 600; margin-bottom: 4px; }
+    .upload-hint { font-size: 12px; color: #94a3b8; }
+    .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap: 8px; margin-top: 14px; }
+    .preview-item {
+      position: relative; border-radius: 8px; overflow: hidden;
+      aspect-ratio: 1; border: 1px solid #e2e8f0;
+    }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-remove {
+      position: absolute; top: 3px; right: 3px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      border: none; border-radius: 50%;
+      width: 18px; height: 18px; cursor: pointer;
+      font-size: 10px; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── 제출 버튼 ── */
+    .submit-btn {
+      width: 100%; padding: 17px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff; font-size: 16px; font-weight: 800;
+      border: none; border-radius: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.3s;
+      box-shadow: 0 6px 24px rgba(22,163,74,0.35);
+    }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(22,163,74,0.45); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 80px; }
+    .side-card {
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    .side-card-hd {
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #14532d, #15803d);
+      color: #fff;
+    }
+    .side-card-hd h3 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .side-card-hd p { font-size: 12px; color: rgba(255,255,255,0.7); }
+    .side-card-body { padding: 18px 20px; }
+    .guide-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px; color: #475569;
+    }
+    .guide-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .guide-step {
+      width: 22px; height: 22px;
+      background: #dcfce7; color: #15803d;
+      border-radius: 50%; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+
+    .emergency-card {
+      background: linear-gradient(135deg, #fef2f2, #fff);
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+    .emergency-title {
+      font-size: 13px; font-weight: 800; color: #dc2626;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+    }
+    .em-contact { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .em-contact:last-child { margin-bottom: 0; }
+    .em-icon { font-size: 16px; }
+    .em-info .em-name { font-size: 12px; font-weight: 700; color: #1e293b; }
+    .em-info .em-num { font-size: 14px; font-weight: 900; color: #dc2626; }
+
+    .info-notice {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 12.5px;
+      color: #14532d;
+      line-height: 1.65;
+    }
+    .info-notice strong { font-weight: 700; color: #15803d; }
+
+    /* ── SUCCESS SCREEN ── */
+    .success-screen {
+      display: none;
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #052e16, #14532d, #15803d);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #fff;
+      padding: 40px;
+    }
+    .success-screen.active { display: flex; }
+    .success-icon-wrap {
+      width: 100px; height: 100px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 44px;
+      margin-bottom: 32px;
+      box-shadow: 0 20px 60px rgba(16,185,129,0.4);
+      animation: popIn 0.5s ease;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      80% { transform: scale(1.12); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-ticket {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 20px 40px;
+      margin: 24px 0 32px;
+      backdrop-filter: blur(12px);
+    }
+    .success-ticket-label { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 6px; font-weight: 600; letter-spacing: 1px; }
+    .success-ticket-num { font-size: 28px; font-weight: 900; color: #4ade80; letter-spacing: 1px; }
+    .success-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .btn-success-go {
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff; font-size: 15px; font-weight: 700;
+      border-radius: 12px; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 24px rgba(22,163,74,0.4);
+      transition: all 0.3s;
+    }
+    .btn-success-go:hover { transform: translateY(-2px); }
+    .btn-success-ghost {
+      padding: 14px 32px;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 600;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+      cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+      transition: all 0.3s;
+    }
+    .btn-success-ghost:hover { background: rgba(255,255,255,0.15); }
+
+    /* ── TOAST ── */
+    .toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 9998; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      padding: 14px 18px;
+      display: flex; align-items: flex-start; gap: 12px;
+      min-width: 280px; max-width: 360px;
+      border-left: 4px solid #16a34a;
+      animation: slideIn 0.3s ease;
+    }
+    .toast.success { border-color: #10b981; }
+    .toast.error { border-color: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast-body .toast-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .toast-body .toast-msg { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: #14532d; color: rgba(255,255,255,0.4);
+      padding: 28px 40px; font-size: 13px; text-align: center; margin-top: 0;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .main { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+    }
+    @media (max-width: 768px) {
+      .header { padding: 0 20px; }
+      .nav { display: none; }
+      .hamburger { display: flex; }
+      .page-hero { padding: 40px 20px; }
+      .page-hero-inner { flex-direction: column; align-items: flex-start; }
+      .page-hero-steps { display: none; }
+      .main { padding: 24px 20px; }
+      .form-card-body { padding: 20px; }
+      .cat-grid { grid-template-columns: repeat(2,1fr); }
+      .pri-grid { grid-template-columns: repeat(2,1fr); }
+      .form-row { grid-template-columns: 1fr; }
+      .form-row-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .type-grid { grid-template-columns: 1fr; }
+      .cat-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+  <!-- Supabase: ① supabase-js → ② config → ③ db.js (로드 순서 중요) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="index.html" class="logo">
+    <div class="logo-icon">🏢</div>
+    <div class="logo-text">
+      <span class="logo-main">FMS</span>
+      <span class="logo-sub">시설관리 민원시스템</span>
+    </div>
+  </a>
+  <nav class="nav">
+    <a href="index.html"><i class="fas fa-home"></i> 홈</a>
+    <a href="submit.html" class="active"><i class="fas fa-plus-circle"></i> 민원 접수</a>
+    <a href="status.html"><i class="fas fa-search"></i> 접수 조회</a>
+    <a href="admin-login.html" style="background:#eff6ff;color:#2563eb;font-weight:700;border-radius:7px;"><i class="fas fa-shield-alt"></i> 관리자</a>
+  </nav>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html"><i class="fas fa-home"></i> 홈</a>
+  <a href="submit.html"><i class="fas fa-plus-circle"></i> 민원 접수</a>
+  <a href="status.html"><i class="fas fa-search"></i> 접수 조회</a>
+  <a href="admin-login.html"><i class="fas fa-shield-alt"></i> 관리자</a>
+</nav>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div>
+      <h1>📝 접수하기</h1>
+      <p>시설물 하자 및 불편사항을 접수해 주시면 신속하게 처리해 드립니다.</p>
+    </div>
+    <div class="page-hero-steps">
+      <div class="phero-step active" id="ps1">
+        <div class="ps-num">1</div>
+        <div class="ps-label">유형·분류</div>
+      </div>
+      <div class="phero-step" id="ps2">
+        <div class="ps-num">2</div>
+        <div class="ps-label">상세 내용</div>
+      </div>
+      <div class="phero-step" id="ps3">
+        <div class="ps-num">3</div>
+        <div class="ps-label">사진 첨부</div>
+      </div>
+      <div class="phero-step" id="ps4">
+        <div class="ps-num">4</div>
+        <div class="ps-label">접수자 정보</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- FORM -->
+  <div>
+    <!-- STEP 1: 유형 & 카테고리 -->
+    <div class="form-card" style="margin-bottom: 20px;">
+      <div class="form-card-header">
+        <div class="form-step-badge">1</div>
+        <div>
+          <div class="form-card-title">접수 유형 및 분류 선택</div>
+          <div style="font-size:12px; color:#94a3b8; margin-top:2px;">접수하실 내용의 유형과 분류를 선택하세요</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-tags"></i> 접수 유형</div>
+          <div class="type-grid">
+            <div class="type-btn" id="type-defect"
+              style="--type-color:#fff0f0; --type-border:#ef4444; --type-shadow:rgba(239,68,68,0.12);"
+              onclick="selectType('defect')">
+              <div class="type-check">✓</div>
+              <div class="type-btn-inner">
+                <span class="type-icon">🔧</span>
+                <div class="type-name">하자 접수</div>
+                <div class="type-desc">시설물 파손, 고장, 결함<br>등 물리적 하자 신고</div>
+              </div>
+            </div>
+            <div class="type-btn" id="type-complaint"
+              style="--type-color:#eff6ff; --type-border:#3b82f6; --type-shadow:rgba(59,130,246,0.12);"
+              onclick="selectType('complaint')">
+              <div class="type-check">✓</div>
+              <div class="type-btn-inner">
+                <span class="type-icon">📢</span>
+                <div class="type-name">불편사항 접수</div>
+                <div class="type-desc">생활 불편, 환경 개선<br>요청 등 민원 사항</div>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="selectedType" value="">
+          <div class="form-error" id="typeError">접수 유형을 선택해 주세요.</div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-layer-group"></i> 세부 분류</div>
+          <div class="cat-grid">
+            <div class="cat-btn" onclick="selectCat(this,'construction')">
+              <span class="cb-icon">🏗️</span>건축·인테리어
+            </div>
+            <div class="cat-btn" onclick="selectCat(this,'equipment')">
+              <span class="cb-icon">🔧</span>설비·공조
+            </div>
+            <div class="cat-btn" onclick="selectCat(this,'electric')">
+              <span class="cb-icon">⚡</span>전기·통신
+            </div>
+            <div class="cat-btn" onclick="selectCat(this,'cleaning')">
+              <span class="cb-icon">🧹</span>환경·청소
+            </div>
+            <div class="cat-btn" onclick="selectCat(this,'other')">
+              <span class="cb-icon">📋</span>기타
+            </div>
+          </div>
+          <input type="hidden" id="selectedCategory" value="">
+          <div class="form-error" id="catError">세부 분류를 선택해 주세요.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: 상세 내용 -->
+    <div class="form-card" style="margin-bottom: 20px;">
+      <div class="form-card-header">
+        <div class="form-step-badge">2</div>
+        <div>
+          <div class="form-card-title">상세 내용 입력</div>
+          <div style="font-size:12px; color:#94a3b8; margin-top:2px;">구체적으로 입력할수록 빠른 처리가 가능합니다</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <div class="form-section">
+          <div class="form-section-title"><i class="fas fa-edit"></i> 내용 작성</div>
+          <div class="form-group">
+            <label class="form-label">제목 <span class="req">*</span></label>
+            <input type="text" id="title" class="form-control" placeholder="예: 3층 회의실 에어컨 고장">
+            <div class="form-error" id="titleError">제목을 입력해 주세요.</div>
+          </div>
+
+          <div class="form-section" style="margin-bottom: 18px;">
+            <div class="form-section-title"><i class="fas fa-map-marker-alt"></i> 위치 정보</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">층수</label>
+                <select id="locationFloor" class="form-control">
+                  <option value="">층수 선택</option>
+                  <option value="B5">지하 5층</option>
+                  <option value="B4">지하 4층</option>
+                  <option value="B3">지하 3층</option>
+                  <option value="B2">지하 2층</option>
+                  <option value="B1">지하 1층</option>
+                  <option value="1F">1층</option>
+                  <option value="2F">2층</option>
+                  <option value="3F">3층</option>
+                  <option value="4F">4층</option>
+                  <option value="5F">5층</option>
+                  <option value="6F">6층</option>
+                  <option value="7F">7층</option>
+                  <option value="8F">8층</option>
+                  <option value="9F">9층</option>
+                  <option value="10F">10층</option>
+                  <option value="11F">11층</option>
+                  <option value="13F">13층</option>
+                  <option value="15F">15층</option>
+                  <option value="16F">16층</option>
+                  <option value="17F">17층</option>
+                  <option value="18F">18층</option>
+                  <option value="19F">19층</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">호실/위치</label>
+                <input type="text" id="locationRoom" class="form-control" placeholder="예: 301호, 복도 엘리베이터 앞">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">상세 설명 <span class="req">*</span></label>
+            <textarea id="description" class="form-control" rows="5"
+              placeholder="발생 상황, 정확한 위치, 증상 등을 구체적으로 설명해 주세요."></textarea>
+            <div class="form-error" id="descError">상세 설명을 입력해 주세요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: 사진 첨부 -->
+    <div class="form-card" style="margin-bottom: 20px;">
+      <div class="form-card-header">
+        <div class="form-step-badge">3</div>
+        <div>
+          <div class="form-card-title">사진 첨부 (선택)</div>
+          <div style="font-size:12px; color:#94a3b8; margin-top:2px;">현장 사진을 첨부하면 처리 속도가 빨라집니다</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">클릭하거나 파일을 드래그하세요</div>
+          <div class="upload-hint">JPG, PNG, GIF · 최대 10MB · 최대 5장</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleFiles(this.files)">
+        <div class="preview-grid" id="previewGrid"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4: 접수자 정보 -->
+    <div class="form-card" style="margin-bottom: 24px;">
+      <div class="form-card-header">
+        <div class="form-step-badge">4</div>
+        <div>
+          <div class="form-card-title">접수자 정보</div>
+          <div style="font-size:12px; color:#94a3b8; margin-top:2px;">처리 결과 안내를 위해 정확히 입력해 주세요</div>
+        </div>
+      </div>
+      <div class="form-card-body">
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">이름 <span class="req">*</span></label>
+            <input type="text" id="submitterName" class="form-control" placeholder="홍길동">
+            <div class="form-error" id="nameError">이름을 입력해 주세요.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">부서 <span class="req">*</span></label>
+            <input type="text" id="submitterDept" class="form-control" placeholder="예: 총무팀, 인사부, 개발본부">
+            <div class="form-error" id="deptError">부서를 입력해 주세요.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">연락처 <span class="req">*</span></label>
+            <input type="tel" id="submitterContact" class="form-control" placeholder="010-0000-0000">
+            <div class="form-error" id="contactError">연락처를 입력해 주세요.</div>
+          </div>
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="submitForm()">
+          <i class="fas fa-paper-plane"></i> 접수하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="side-card">
+      <div class="side-card-hd">
+        <h3>📌 접수 안내</h3>
+        <p>처리 절차를 확인하세요</p>
+      </div>
+      <div class="side-card-body">
+        <div class="guide-item">
+          <div class="guide-step">1</div>
+          <div>유형과 분류를 선택하세요</div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-step">2</div>
+          <div>제목과 상세 내용을 입력하세요</div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-step">3</div>
+          <div>현장 사진을 첨부하면 처리가 빠릅니다</div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-step">4</div>
+          <div>접수자 정보를 입력하고 제출하세요</div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-step">5</div>
+          <div>접수 번호로 처리 현황을 확인할 수 있습니다</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="emergency-card">
+      <div class="emergency-title">🚨 긴급 연락처</div>
+      <div class="em-contact">
+        <span class="em-icon">🚒</span>
+        <div class="em-info">
+          <div class="em-name">시설관리실 방재실</div>
+          <div class="em-num">02-2024-4614</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-notice">
+      <strong>📋 처리 시간 안내</strong><br>
+      • 긴급: 당일 처리 원칙<br>
+      • 높음: 1~2 영업일 이내<br>
+      • 보통: 3~5 영업일 이내<br>
+      • 낮음: 7 영업일 이내<br><br>
+      처리 결과는 등록된 연락처로 안내드립니다.
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  © 2026 FMS 시설관리 민원시스템. All rights reserved.
+</footer>
+
+<!-- SUCCESS SCREEN -->
+<div class="success-screen" id="successScreen">
+  <div class="success-icon-wrap">✅</div>
+  <h2 style="font-size:32px; font-weight:900; margin-bottom:12px;">접수 완료!</h2>
+  <p style="color:rgba(255,255,255,0.6); font-size:16px; line-height:1.7;">민원이 성공적으로 접수되었습니다.<br>담당자가 빠르게 처리해 드리겠습니다.</p>
+  <div class="success-ticket">
+    <div class="success-ticket-label">접수 번호</div>
+    <div class="success-ticket-num" id="successTicketNum">—</div>
+  </div>
+  <div class="success-actions">
+    <button class="btn-success-go" onclick="location.href='status.html'">
+      <i class="fas fa-search"></i> 접수 현황 확인
+    </button>
+    <button class="btn-success-ghost" onclick="resetForm()">
+      <i class="fas fa-plus"></i> 추가 접수
+    </button>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('mobileNav').classList.toggle('open');
+  });
+
+  // URL 파라미터 처리
+  const urlParams = new URLSearchParams(window.location.search);
+  const pType = urlParams.get('type');
+  const pCat = urlParams.get('category');
+  if (pType) selectType(pType);
+  if (pCat) {
+    const btn = document.querySelector(`[onclick*="selectCat"][onclick*="${pCat}"]`);
+    if (btn) selectCat(btn, pCat);
+  }
+
+  // 스텝 인디케이터 업데이트
+  function updateSteps() {
+    const t = document.getElementById('selectedType').value;
+    const c = document.getElementById('selectedCategory').value;
+    const title = document.getElementById('title').value;
+    const desc = document.getElementById('description').value;
+    const name = document.getElementById('submitterName').value;
+    const dept = document.getElementById('submitterDept').value;
+
+    const steps = [
+      document.getElementById('ps1'),
+      document.getElementById('ps2'),
+      document.getElementById('ps3'),
+      document.getElementById('ps4'),
+    ];
+
+    steps.forEach(s => { s.classList.remove('active','done'); });
+
+    if (name && dept) {
+      steps[0].classList.add('done'); steps[1].classList.add('done');
+      steps[2].classList.add('done'); steps[3].classList.add('active');
+    } else if (title && desc) {
+      steps[0].classList.add('done'); steps[1].classList.add('done');
+      steps[2].classList.add('active');
+    } else if (t && c) {
+      steps[0].classList.add('done'); steps[1].classList.add('active');
+    } else {
+      steps[0].classList.add('active');
+    }
+  }
+
+  document.getElementById('title').addEventListener('input', updateSteps);
+  document.getElementById('description').addEventListener('input', updateSteps);
+  document.getElementById('submitterName').addEventListener('input', updateSteps);
+  document.getElementById('submitterDept').addEventListener('input', updateSteps);
+
+  function selectType(type) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('type-' + type)?.classList.add('selected');
+    document.getElementById('selectedType').value = type;
+    document.getElementById('typeError').style.display = 'none';
+    updateSteps();
+  }
+
+  let selectedCatBtn = null;
+  function selectCat(btn, cat) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('selectedCategory').value = cat;
+    document.getElementById('catError').style.display = 'none';
+    updateSteps();
+  }
+
+  // 파일 업로드
+  const uploadedFiles = [];
+  const uploadArea = document.getElementById('uploadArea');
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('over'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('over'));
+  uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+
+  function handleFiles(files) {
+    const MAX = 5;
+    Array.from(files).slice(0, MAX - uploadedFiles.length).forEach(f => {
+      if (!f.type.startsWith('image/') || uploadedFiles.length >= MAX) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        uploadedFiles.push({ file: f, url: ev.target.result });
+        renderPreviews();
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function renderPreviews() {
+    const grid = document.getElementById('previewGrid');
+    grid.innerHTML = '';
+    uploadedFiles.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="${item.url}" alt="미리보기"><button class="preview-remove" onclick="removeFile(${idx})">✕</button>`;
+      grid.appendChild(div);
+    });
+  }
+  function removeFile(idx) { uploadedFiles.splice(idx, 1); renderPreviews(); }
+
+  // 폼 제출
+  async function submitForm() {
+    let valid = true;
+    const type = document.getElementById('selectedType').value;
+    const category = document.getElementById('selectedCategory').value;
+    const title = document.getElementById('title').value.trim();
+    const desc = document.getElementById('description').value.trim();
+    const name = document.getElementById('submitterName').value.trim();
+    const contact = document.getElementById('submitterContact').value.trim();
+    const dept = document.getElementById('submitterDept').value.trim();
+    const priority = 'medium';
+    const locFloorEl = document.getElementById('locationFloor');
+    const locFloorLabel = locFloorEl.value ? locFloorEl.options[locFloorEl.selectedIndex].text : '';
+    const locRoom = document.getElementById('locationRoom').value.trim();
+    const location = [locFloorLabel, locRoom].filter(Boolean).join(' · ');
+
+    if (!type) { document.getElementById('typeError').style.display = 'block'; valid = false; }
+    if (!category) { document.getElementById('catError').style.display = 'block'; valid = false; }
+    if (!title) { document.getElementById('title').classList.add('error'); valid = false; }
+    else document.getElementById('title').classList.remove('error');
+    if (!desc) { document.getElementById('description').classList.add('error'); valid = false; }
+    else document.getElementById('description').classList.remove('error');
+    if (!name) { document.getElementById('submitterName').classList.add('error'); valid = false; }
+    else document.getElementById('submitterName').classList.remove('error');
+    if (!contact) { document.getElementById('submitterContact').classList.add('error'); valid = false; }
+    else document.getElementById('submitterContact').classList.remove('error');
+    if (!dept) { document.getElementById('submitterDept').classList.add('error'); valid = false; }
+    else document.getElementById('submitterDept').classList.remove('error');
+
+    if (!valid) { showToast('입력 오류', '필수 항목을 모두 입력해 주세요.', 'error'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 접수 중...';
+
+    const ticketNum = 'HC-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*900+100);
+
+    // 사진은 Supabase Storage 에 업로드하고 공개 URL 만 저장한다.
+    let photoUrls = [];
+    try {
+      if (uploadedFiles.length && window.uploadPhotos) {
+        photoUrls = await window.uploadPhotos(uploadedFiles.map(f => f.file));
+      }
+    } catch (err) {
+      console.error('사진 업로드 실패:', err);
+      showToast('사진 업로드 실패', '사진 없이 접수를 진행합니다.', 'warning');
+    }
+
+    const payload = {
+      ticket_number: ticketNum,
+      type, category, title,
+      description: desc,
+      location: location || '',
+      department: dept,
+      submitter_name: name,
+      submitter_contact: contact,
+      submitter_unit: dept,
+      priority,
+      status: 'received',
+      photo_urls: photoUrls,
+    };
+
+    try {
+      const res = await fetch('tables/complaints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('API 오류');
+      document.getElementById('successTicketNum').textContent = ticketNum;
+      document.getElementById('successScreen').classList.add('active');
+    } catch(e) {
+      showToast('오류 발생', '접수 중 오류가 발생했습니다. 다시 시도해 주세요.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> 접수하기';
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('successScreen').classList.remove('active');
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    ['title','description','locationRoom','submitterName','submitterContact','submitterDept'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('error'); }
+    });
+    document.getElementById('locationFloor').value = '';
+    document.getElementById('selectedType').value = '';
+    document.getElementById('selectedCategory').value = '';
+    uploadedFiles.length = 0;
+    renderPreviews();
+    updateSteps();
+    window.scrollTo(0, 0);
+  }
+
+  function showToast(title, msg, type='info') {
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = `<div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+    wrap.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+</script>
+</body>
+</html>

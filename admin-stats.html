@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>통계 분석 - FMS Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.6; overflow: hidden; }
+
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar { width: 240px; flex-shrink: 0; background: #14532d; display: flex; flex-direction: column; height: 100vh; overflow: hidden; z-index: 10; }
+    .sidebar-logo { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #16a34a, #15803d); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .lmain { font-size: 15px; font-weight: 800; color: #fff; line-height: 1; }
+    .lsub { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 400; margin-top: 2px; }
+    .sidebar-admin { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 9px; }
+    .admin-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #16a34a, #15803d); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0; }
+    .admin-name { font-size: 12.5px; font-weight: 700; color: #fff; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); }
+    .sidebar-nav { flex: 1; padding: 10px; overflow-y: auto; }
+    .nav-section-title { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 1px; padding: 10px 10px 5px; }
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 10px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.55); cursor: pointer; transition: all 0.2s; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .nav-icon { width: 18px; text-align: center; }
+    .sidebar-bottom { padding: 10px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .logout-btn { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: #f87171; cursor: pointer; border: none; background: none; width: 100%; font-family: inherit; }
+    .logout-btn:hover { background: rgba(239,68,68,0.1); }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; height: 60px; display: flex; align-items: center; padding: 0 24px; gap: 12px; flex-shrink: 0; box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
+    .mobile-menu-btn { display: none; background: none; border: none; font-size: 18px; cursor: pointer; color: #475569; }
+    .topbar-title { font-size: 17px; font-weight: 800; color: #0f172a; flex: 1; }
+    .scroll-area { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* KPI STRIP */
+    .kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 20px; position: relative; overflow: hidden; transition: all 0.3s; }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,0.07); }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--kpi-color, #16a34a); border-radius: 4px 4px 0 0; }
+    .kpi-icon { width: 44px; height: 44px; border-radius: 11px; background: var(--kpi-bg, #dcfce7); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 14px; }
+    .kpi-val { font-size: 34px; font-weight: 900; color: #0f172a; line-height: 1; margin-bottom: 5px; }
+    .kpi-label { font-size: 12.5px; font-weight: 600; color: #64748b; }
+
+    /* CHART GRID */
+    .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .chart-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .chart-header { padding: 18px 22px 14px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+    .chart-title { font-size: 14px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 7px; }
+    .chart-body { padding: 20px; }
+    .chart-wrap { position: relative; height: 260px; }
+    .chart-wrap-sm { position: relative; height: 220px; }
+
+    .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    /* BAR CHART CUSTOM */
+    .bar-list { display: flex; flex-direction: column; gap: 10px; }
+    .bar-item { display: flex; align-items: center; gap: 10px; }
+    .bar-label { font-size: 12px; font-weight: 600; color: #475569; min-width: 70px; }
+    .bar-track { flex: 1; height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+    .bar-val { font-size: 13px; font-weight: 800; color: #0f172a; min-width: 30px; text-align: right; }
+
+    /* LEGEND */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #475569; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* TABLE */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table thead th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 700; color: #475569; font-size: 11px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; letter-spacing: 0.3px; }
+    .data-table tbody tr { border-bottom: 1px solid #f1f5f9; }
+    .data-table tbody td { padding: 11px 14px; color: #334155; }
+    .data-table tbody tr:last-child { border-bottom: none; }
+
+    /* TOAST */
+    .toast-wrap { position: fixed; top: 70px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 13px 16px; display: flex; align-items: flex-start; gap: 10px; min-width: 260px; border-left: 3px solid #16a34a; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9; }
+    .mobile-overlay.active { display: block; }
+
+    @media (max-width: 1200px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } .chart-grid { grid-template-columns: 1fr; } .chart-grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; left: -240px; top: 0; bottom: 0; z-index: 100; transition: left 0.3s; }
+      .sidebar.open { left: 0; }
+      .mobile-menu-btn { display: block; }
+      .scroll-area { padding: 16px; }
+      .chart-grid-2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) { .kpi-strip { grid-template-columns: 1fr 1fr; } .chart-grid-3 { grid-template-columns: 1fr; } }
+  </style>
+  <!-- Supabase: ① supabase-js → ② config → ③ db.js (로드 순서 중요) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div><div class="lmain">FMS Admin</div><div class="lsub">시설관리 관리자</div></div>
+    </div>
+    <div class="sidebar-admin">
+      <div class="admin-avatar" id="adminAvatar">A</div>
+      <div>
+        <div class="admin-name" id="adminName">관리자</div>
+        <div class="admin-role" id="adminRole">슈퍼 관리자</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">메인</div>
+      <a href="admin-dashboard.html" class="nav-item"><span class="nav-icon">📊</span> 대시보드</a>
+      <a href="admin-stats.html" class="nav-item active"><span class="nav-icon">📈</span> 통계 분석</a>
+      <div class="nav-section-title">시스템</div>
+      <a href="index.html" class="nav-item" target="_blank"><span class="nav-icon">🌐</span> 사용자 사이트</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 로그아웃</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="mobile-menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title">📈 통계 분석</span>
+      <button onclick="loadData()" style="padding:8px 16px;background:#f1f5f9;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:inherit;"><i class="fas fa-sync"></i> 새로고침</button>
+    </div>
+    <div class="scroll-area">
+      <!-- KPI STRIP -->
+      <div class="kpi-strip">
+        <div class="kpi-card" style="--kpi-color:#16a34a; --kpi-bg:#dcfce7;">
+          <div class="kpi-icon">📋</div>
+          <div class="kpi-val" id="sk1">—</div>
+          <div class="kpi-label">전체 접수 건수</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#10b981; --kpi-bg:#f0fdf4;">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-val" id="sk2">—</div>
+          <div class="kpi-label">전체 완료</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#8b5cf6; --kpi-bg:#f5f3ff;">
+          <div class="kpi-icon">⚡</div>
+          <div class="kpi-val" id="sk3">—%</div>
+          <div class="kpi-label">전체 완료율</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#ef4444; --kpi-bg:#fef2f2;">
+          <div class="kpi-icon">🔴</div>
+          <div class="kpi-val" id="sk4">—</div>
+          <div class="kpi-label">긴급 처리</div>
+        </div>
+      </div>
+
+      <!-- ROW 1 -->
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📅 월별 접수 추이 (최근 6개월)</span>
+          </div>
+          <div class="chart-body">
+            <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📊 처리 상태 분포</span>
+          </div>
+          <div class="chart-body">
+            <div class="chart-wrap-sm"><canvas id="statusChart"></canvas></div>
+            <div class="legend" id="statusLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="chart-grid-2">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📂 분류별 접수 현황</span>
+          </div>
+          <div class="chart-body">
+            <div class="bar-list" id="catBars"></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">⚡ 유형별 비율</span>
+          </div>
+          <div class="chart-body">
+            <div class="chart-wrap-sm"><canvas id="typeChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">👤 담당자별 처리 현황</span>
+          </div>
+          <div class="chart-body">
+            <div class="chart-wrap"><canvas id="assigneeChart"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📋 최근 완료 민원</span>
+          </div>
+          <div class="chart-body" style="padding:0;">
+            <table class="data-table">
+              <thead><tr><th>접수번호</th><th>제목</th><th>담당자</th><th>완료일</th></tr></thead>
+              <tbody id="recentCompleted"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+  // 인증 확인 (Supabase Auth 세션)
+  (async () => {
+    const { data } = await window.sbClient.auth.getSession();
+    if (!data || !data.session) { location.href = 'admin-login.html'; return; }
+    const email = data.session.user.email || '관리자';
+    const name = (data.session.user.user_metadata && data.session.user.user_metadata.name) || email.split('@')[0];
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('adminName', name);
+    set('adminRole', '관리자');
+    set('adminAvatar', name[0].toUpperCase());
+  })();
+  async function logout() { if (confirm('로그아웃 하시겠습니까?')) { await window.sbClient.auth.signOut(); location.href = 'admin-login.html'; } }
+  function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('mobileOverlay').classList.add('active'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('mobileOverlay').classList.remove('active'); }
+
+  Chart.defaults.font.family = "'Noto Sans KR', sans-serif";
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.plugins.legend.display = false;
+
+  let charts = {};
+  function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+  async function loadData() {
+    try {
+      const res = await fetch('tables/complaints?limit=1000');
+      const data = await res.json();
+      const items = data.data || [];
+      buildStats(items);
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  function buildStats(items) {
+    const total = items.length;
+    const done = items.filter(i => i.status === 'completed').length;
+    const urgent = items.filter(i => i.priority === 'urgent').length;
+    const rate = total > 0 ? Math.round(done/total*100) : 0;
+
+    document.getElementById('sk1').textContent = total;
+    document.getElementById('sk2').textContent = done;
+    document.getElementById('sk3').textContent = rate + '%';
+    document.getElementById('sk4').textContent = urgent;
+
+    buildMonthlyChart(items);
+    buildStatusChart(items);
+    buildCatBars(items);
+    buildTypeChart(items);
+    buildAssigneeChart(items);
+    buildRecentCompleted(items);
+  }
+
+  function buildMonthlyChart(items) {
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ label: `${d.getMonth()+1}월`, year: d.getFullYear(), month: d.getMonth() });
+    }
+    const countMap = {};
+    const doneMap = {};
+    months.forEach(m => { countMap[m.label] = 0; doneMap[m.label] = 0; });
+    items.forEach(item => {
+      const d = new Date(item.created_at);
+      const label = `${d.getMonth()+1}월`;
+      if (countMap[label] !== undefined) countMap[label]++;
+      if (item.status === 'completed' && doneMap[label] !== undefined) doneMap[label]++;
+    });
+
+    destroyChart('monthly');
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    charts['monthly'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: months.map(m => m.label),
+        datasets: [
+          { label: '접수', data: months.map(m => countMap[m.label]), backgroundColor: 'rgba(59,130,246,0.8)', borderRadius: 6, borderSkipped: false },
+          { label: '완료', data: months.map(m => doneMap[m.label]), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6, borderSkipped: false }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { weight: '600', size: 12 } } } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  function buildStatusChart(items) {
+    const stat = { received:0, in_progress:0, completed:0, rejected:0 };
+    items.forEach(i => { if(stat[i.status]!==undefined) stat[i.status]++; });
+    const labels = ['접수', '처리 중', '완료', '반려'];
+    const vals = [stat.received, stat.in_progress, stat.completed, stat.rejected];
+    const colors = ['#3b82f6','#f59e0b','#10b981','#ef4444'];
+
+    destroyChart('status');
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    charts['status'] = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}건` } } }
+      }
+    });
+
+    const total = items.length || 1;
+    document.getElementById('statusLegend').innerHTML = labels.map((l,i) => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${colors[i]};"></span>
+        ${l} <strong style="color:#0f172a;">${vals[i]}</strong>
+        <span style="color:#94a3b8;">(${Math.round(vals[i]/total*100)}%)</span>
+      </div>`).join('');
+  }
+
+  function buildCatBars(items) {
+    const cats = { construction:0, equipment:0, electric:0, cleaning:0, other:0 };
+    items.forEach(i => { if(cats[i.category]!==undefined) cats[i.category]++; });
+    const names = { construction:'건축·인테리어', equipment:'설비·공조', electric:'전기·통신', cleaning:'환경·청소', other:'기타' };
+    const colors = { construction:'#ec4899', equipment:'#f59e0b', electric:'#3b82f6', cleaning:'#10b981', other:'#8b5cf6' };
+    const max = Math.max(...Object.values(cats)) || 1;
+
+    document.getElementById('catBars').innerHTML = Object.entries(cats).map(([k,v]) =>
+      `<div class="bar-item">
+        <span class="bar-label">${names[k]}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/max*100)}%; background:${colors[k]};"></div></div>
+        <span class="bar-val">${v}</span>
+      </div>`
+    ).join('');
+  }
+
+  function buildTypeChart(items) {
+    const defect = items.filter(i => i.type==='defect').length;
+    const complaint = items.length - defect;
+    destroyChart('type');
+    const ctx = document.getElementById('typeChart').getContext('2d');
+    charts['type'] = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['하자 신고', '민원 접수'],
+        datasets: [{ data: [defect, complaint], backgroundColor: ['#ef4444','#6366f1'], borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { weight: '600', size: 12 } } } }
+      }
+    });
+  }
+
+  function buildAssigneeChart(items) {
+    const assignees = {};
+    items.forEach(i => {
+      const name = i.assigned_to || '미배정';
+      if (!assignees[name]) assignees[name] = { total:0, done:0 };
+      assignees[name].total++;
+      if (i.status === 'completed') assignees[name].done++;
+    });
+
+    const sorted = Object.entries(assignees).sort((a,b) => b[1].total-a[1].total).slice(0, 6);
+    const labels = sorted.map(([k]) => k);
+    const totals = sorted.map(([,v]) => v.total);
+    const dones = sorted.map(([,v]) => v.done);
+
+    destroyChart('assignee');
+    const ctx = document.getElementById('assigneeChart').getContext('2d');
+    charts['assignee'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '전체', data: totals, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 6, borderSkipped: false },
+          { label: '완료', data: dones, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6, borderSkipped: false }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { weight: '600', size: 12 } } } },
+        scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0 } }, y: { grid: { display: false } } }
+      }
+    });
+  }
+
+  function buildRecentCompleted(items) {
+    const completed = items
+      .filter(i => i.status === 'completed')
+      .sort((a,b) => (b.completed_at||b.updated_at) - (a.completed_at||a.updated_at))
+      .slice(0, 8);
+
+    const tbody = document.getElementById('recentCompleted');
+    if (completed.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">완료된 민원 없음</td></tr>';
+      return;
+    }
+    tbody.innerHTML = completed.map(item => {
+      const doneAt = item.completed_at ? new Date(item.completed_at).toLocaleDateString('ko-KR') : (item.updated_at ? new Date(item.updated_at).toLocaleDateString('ko-KR') : '—');
+      return `<tr>
+        <td style="font-size:11px;font-weight:800;color:#1d4ed8;font-family:monospace;">${(item.ticket_number||'').split('-').pop()||'—'}</td>
+        <td style="max-width:140px;font-size:12px;font-weight:600;">${(item.title||'').substring(0,16)}${(item.title||'').length>16?'…':''}</td>
+        <td style="font-size:12px;color:#64748b;">${item.assigned_to||'—'}</td>
+        <td style="font-size:12px;color:#94a3b8;">${doneAt}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  loadData();
+</script>
+</body>
+</html>

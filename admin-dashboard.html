@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 대시보드 - FMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.6; overflow: hidden; }
+
+    /* ── APP LAYOUT ── */
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: #14532d;
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
+      position: relative; z-index: 10;
+      transition: width 0.3s;
+    }
+    .sidebar-logo {
+      padding: 22px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(22,163,74,0.4);
+    }
+    .sidebar-logo-text .lmain { font-size: 16px; font-weight: 800; color: #fff; line-height: 1; }
+    .sidebar-logo-text .lsub { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 400; margin-top: 3px; }
+
+    .sidebar-admin {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .admin-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .admin-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+    .sidebar-nav { flex: 1; padding: 12px 12px; overflow-y: auto; }
+    .nav-section-title {
+      font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.25);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 12px 12px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 12px; border-radius: 9px;
+      font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.55);
+      cursor: pointer; transition: all 0.2s; margin-bottom: 2px;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .nav-item .nav-icon { width: 20px; text-align: center; font-size: 15px; }
+    .nav-badge {
+      margin-left: auto; background: #ef4444;
+      color: #fff; font-size: 10px; font-weight: 800;
+      padding: 2px 7px; border-radius: 100px; min-width: 20px; text-align: center;
+    }
+    .nav-badge.orange { background: #f59e0b; }
+
+    .sidebar-bottom {
+      padding: 12px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .sidebar-bottom a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 9px;
+      font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4);
+      text-decoration: none; transition: all 0.2s; margin-bottom: 2px;
+    }
+    .sidebar-bottom a:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
+    .logout-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 9px;
+      font-size: 13px; font-weight: 600; color: #f87171;
+      cursor: pointer; transition: all 0.2s; border: none; background: none; width: 100%;
+    }
+    .logout-btn:hover { background: rgba(239,68,68,0.1); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      height: 60px; display: flex; align-items: center;
+      padding: 0 28px; gap: 16px; flex-shrink: 0;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+    }
+    .mobile-menu-btn { display: none; background: none; border: none; font-size: 18px; cursor: pointer; color: #475569; }
+    .topbar-title { font-size: 17px; font-weight: 800; color: #0f172a; flex: 1; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .topbar-btn {
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; gap: 7px;
+      font-family: inherit;
+    }
+    .topbar-btn-primary { background: #16a34a; color: #fff; }
+    .topbar-btn-primary:hover { background: #15803d; }
+    .topbar-btn-outline { background: #fff; color: #475569; border: 1.5px solid #e2e8f0; }
+    .topbar-btn-outline:hover { border-color: #94a3b8; }
+    .notif-btn {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: #f1f5f9; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #475569; position: relative; transition: all 0.2s;
+    }
+    .notif-btn:hover { background: #e2e8f0; }
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+      border: 2px solid #fff;
+    }
+
+    /* ── SCROLL AREA ── */
+    .scroll-area { flex: 1; overflow-y: auto; padding: 28px; }
+
+    /* ── KPI GRID ── */
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 18px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: #fff; border-radius: 16px;
+      border: 1px solid #e2e8f0; padding: 22px 22px 18px;
+      position: relative; overflow: hidden;
+      transition: all 0.3s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.08); border-color: transparent; }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 4px; background: var(--kpi-color, #3b82f6); border-radius: 4px 4px 0 0;
+    }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .kpi-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      background: var(--kpi-bg, #eff6ff);
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .kpi-trend { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 100px; }
+    .kpi-trend.up { background: #f0fdf4; color: #15803d; }
+    .kpi-trend.warn { background: #fef2f2; color: #dc2626; }
+    .kpi-val { font-size: 36px; font-weight: 900; color: #0f172a; line-height: 1; margin-bottom: 6px; }
+    .kpi-label { font-size: 13px; font-weight: 600; color: #64748b; }
+
+    /* ── EMERGENCY BANNER ── */
+    .emergency-banner {
+      background: linear-gradient(90deg, #fef2f2, #fff5f5);
+      border: 1px solid #fecaca; border-left: 4px solid #ef4444;
+      border-radius: 12px; padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 28px; cursor: pointer; transition: all 0.2s;
+    }
+    .emergency-banner:hover { box-shadow: 0 4px 16px rgba(239,68,68,0.15); }
+    .emergency-banner.hidden { display: none; }
+    .em-icon { font-size: 22px; flex-shrink: 0; }
+    .em-text { flex: 1; }
+    .em-title { font-size: 14px; font-weight: 800; color: #dc2626; margin-bottom: 2px; }
+    .em-desc { font-size: 13px; color: #ef4444; }
+    .em-arrow { color: #fca5a5; font-size: 18px; }
+
+    /* ── CONTENT GRID ── */
+    .content-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+
+    /* ── CARD ── */
+    .card {
+      background: #fff; border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .card-title { font-size: 15px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .card-body { padding: 0; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      padding: 14px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .filter-search { flex: 1; min-width: 160px; position: relative; }
+    .filter-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px; }
+    .filter-input {
+      width: 100%; padding: 8px 12px 8px 30px;
+      border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 13px; outline: none; font-family: inherit; color: #1e293b; transition: all 0.2s;
+    }
+    .filter-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.08); }
+    .filter-select {
+      padding: 8px 28px 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 13px; font-family: inherit; color: #475569;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;
+      appearance: none; outline: none; cursor: pointer;
+    }
+    .filter-select:focus { border-color: #16a34a; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: #f8fafc; padding: 11px 16px;
+      text-align: left; font-weight: 700; color: #475569;
+      font-size: 12px; border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: all 0.2s; cursor: pointer; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 12px 16px; color: #334155; vertical-align: middle; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .badge-received { background: #dcfce7; color: #15803d; }
+    .badge-in_progress { background: #fffbeb; color: #92400e; }
+    .badge-completed { background: #f0fdf4; color: #15803d; }
+    .badge-rejected { background: #fef2f2; color: #dc2626; }
+    .badge-defect { background: #fff1f2; color: #be123c; }
+    .badge-complaint { background: #eef2ff; color: #4338ca; }
+    .badge-priority-urgent { background: #faf5ff; color: #6d28d9; font-weight: 800; }
+    .badge-priority-high { background: #fff7ed; color: #9a3412; }
+
+    .ticket-num { font-size: 11px; font-weight: 800; color: #15803d; font-family: monospace; }
+
+    /* ── SIDE WIDGETS ── */
+    .side-widget { margin-bottom: 20px; }
+    .widget-item {
+      padding: 12px 18px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; transition: all 0.2s; cursor: pointer;
+    }
+    .widget-item:last-child { border-bottom: none; }
+    .widget-item:hover { background: #f8fafc; }
+    .widget-left { display: flex; align-items: center; gap: 10px; }
+    .widget-icon { font-size: 18px; flex-shrink: 0; }
+    .widget-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .widget-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .widget-val { font-size: 18px; font-weight: 900; color: #0f172a; }
+
+    /* DONUT */
+    .donut-chart { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; }
+    .donut-item { display: flex; align-items: center; gap: 10px; }
+    .donut-bar-wrap { flex: 1; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+    .donut-bar { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .donut-label { font-size: 12px; font-weight: 600; color: #475569; min-width: 48px; }
+    .donut-pct { font-size: 12px; font-weight: 800; color: #0f172a; min-width: 36px; text-align: right; }
+    .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* PAGINATION */
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 16px 0; }
+    .pg-btn {
+      width: 34px; height: 34px; border: 1.5px solid #e2e8f0; border-radius: 7px;
+      background: #fff; font-size: 13px; font-weight: 600; color: #475569;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .pg-btn:hover { border-color: #16a34a; color: #15803d; }
+    .pg-btn.active { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* TOAST */
+    .toast-wrap { position: fixed; top: 70px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 13px 16px; display: flex; align-items: flex-start; gap: 10px; min-width: 260px; border-left: 3px solid #16a34a; animation: slideIn 0.3s ease; }
+    .toast.success { border-color: #10b981; }
+    .toast.error { border-color: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* EMPTY */
+    .empty-state { text-align: center; padding: 50px 20px; color: #94a3b8; }
+    .empty-state .ei { font-size: 44px; margin-bottom: 12px; }
+
+    /* MOBILE OVERLAY */
+    .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9; }
+    .mobile-overlay.active { display: block; }
+
+    /* RESPONSIVE */
+    @media (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(2,1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 100; transition: left 0.3s; }
+      .sidebar.open { left: 0; }
+      .mobile-menu-btn { display: block; }
+      .scroll-area { padding: 20px; }
+    }
+    @media (max-width: 600px) {
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .scroll-area { padding: 16px; }
+    }
+  </style>
+  <!-- Supabase: ① supabase-js → ② config → ③ db.js (로드 순서 중요) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="lmain">FMS Admin</div>
+        <div class="lsub">시설관리 관리자</div>
+      </div>
+    </div>
+    <div class="sidebar-admin">
+      <div class="admin-avatar" id="adminAvatar">A</div>
+      <div>
+        <div class="admin-name" id="adminName">관리자</div>
+        <div class="admin-role" id="adminRole">슈퍼 관리자</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">메인</div>
+      <a href="admin-dashboard.html" class="nav-item active">
+        <span class="nav-icon">📊</span> 대시보드
+      </a>
+      <a href="admin-stats.html" class="nav-item">
+        <span class="nav-icon">📈</span> 통계 분석
+      </a>
+      <div class="nav-section-title">민원 관리</div>
+      <div class="nav-item" onclick="filterByStatus('')">
+        <span class="nav-icon">📋</span> 전체 민원
+        <span class="nav-badge orange" id="navTotal">0</span>
+      </div>
+      <div class="nav-item" onclick="filterByStatus('received')">
+        <span class="nav-icon">📥</span> 신규 접수
+        <span class="nav-badge" id="navReceived">0</span>
+      </div>
+      <div class="nav-item" onclick="filterByStatus('in_progress')">
+        <span class="nav-icon">⚙️</span> 처리 중
+        <span class="nav-badge orange" id="navProgress">0</span>
+      </div>
+      <div class="nav-item" onclick="filterByStatus('completed')">
+        <span class="nav-icon">✅</span> 완료
+      </div>
+      <div class="nav-section-title">시스템</div>
+      <a href="index.html" class="nav-item" target="_blank">
+        <span class="nav-icon">🌐</span> 사용자 사이트
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> 로그아웃
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="mobile-menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title" id="topbarTitle">📊 대시보드</span>
+      <div class="topbar-actions">
+        <button class="notif-btn" title="알림"><i class="fas fa-bell"></i><span class="notif-dot"></span></button>
+        <a href="submit.html" target="_blank" class="topbar-btn topbar-btn-outline"><i class="fas fa-external-link-alt"></i> 사용자 사이트</a>
+      </div>
+    </div>
+
+    <!-- SCROLL AREA -->
+    <div class="scroll-area">
+      <!-- EMERGENCY BANNER -->
+      <div class="emergency-banner" id="emergencyBanner" onclick="filterByStatus('received')" style="display:none;">
+        <span class="em-icon">🚨</span>
+        <div class="em-text">
+          <div class="em-title">미처리 긴급 민원이 있습니다!</div>
+          <div class="em-desc" id="emergencyDesc">긴급 처리가 필요한 민원을 확인하세요</div>
+        </div>
+        <span class="em-arrow"><i class="fas fa-arrow-right"></i></span>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:#3b82f6; --kpi-bg:#eff6ff;">
+          <div class="kpi-top">
+            <div class="kpi-icon">📋</div>
+            <span class="kpi-trend up" id="kpiTotalTrend">전체</span>
+          </div>
+          <div class="kpi-val" id="kpiTotal">—</div>
+          <div class="kpi-label">전체 접수</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#f59e0b; --kpi-bg:#fffbeb;">
+          <div class="kpi-top">
+            <div class="kpi-icon">📥</div>
+            <span class="kpi-trend warn" id="kpiNewTrend">대기</span>
+          </div>
+          <div class="kpi-val" id="kpiNew">—</div>
+          <div class="kpi-label">신규 접수 (미배정)</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#10b981; --kpi-bg:#f0fdf4;">
+          <div class="kpi-top">
+            <div class="kpi-icon">✅</div>
+            <span class="kpi-trend up" id="kpiDoneTrend">이달</span>
+          </div>
+          <div class="kpi-val" id="kpiDone">—</div>
+          <div class="kpi-label">이달 완료</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#8b5cf6; --kpi-bg:#f5f3ff;">
+          <div class="kpi-top">
+            <div class="kpi-icon">⚡</div>
+            <span class="kpi-trend up" id="kpiRateTrend">율</span>
+          </div>
+          <div class="kpi-val" id="kpiRate">—</div>
+          <div class="kpi-label">완료율</div>
+        </div>
+      </div>
+
+      <!-- CONTENT GRID -->
+      <div class="content-grid">
+        <!-- MAIN TABLE -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="tableTitle">📋 전체 민원 목록</span>
+            <div style="display:flex; gap:8px;">
+              <button class="topbar-btn topbar-btn-outline" onclick="loadData()" style="font-size:12px; padding:6px 12px;"><i class="fas fa-sync"></i> 새로고침</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="filter-bar">
+              <div class="filter-search">
+                <i class="fas fa-search"></i>
+                <input type="text" class="filter-input" id="searchInput" placeholder="접수번호, 이름, 제목 검색..." oninput="applyFilter()">
+              </div>
+              <select class="filter-select" id="statusFilter" onchange="applyFilter()">
+                <option value="">전체 상태</option>
+                <option value="received">신규 접수</option>
+                <option value="in_progress">처리 중</option>
+                <option value="completed">완료</option>
+                <option value="rejected">반려</option>
+              </select>
+              <select class="filter-select" id="typeFilter" onchange="applyFilter()">
+                <option value="">전체 유형</option>
+                <option value="defect">하자 신고</option>
+                <option value="complaint">민원 접수</option>
+              </select>
+              <select class="filter-select" id="priFilter" onchange="applyFilter()">
+                <option value="">전체 우선순위</option>
+                <option value="urgent">긴급</option>
+                <option value="high">높음</option>
+                <option value="medium">보통</option>
+                <option value="low">낮음</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>접수번호</th>
+                    <th>유형/분류</th>
+                    <th>제목</th>
+                    <th>접수자</th>
+                    <th>층수/부서</th>
+                    <th>우선순위</th>
+                    <th>상태</th>
+                    <th>담당자</th>
+                    <th>접수일</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <tr><td colspan="9" style="text-align:center; padding:40px; color:#94a3b8;">불러오는 중...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+
+        <!-- SIDE WIDGETS -->
+        <div>
+          <!-- 분류별 현황 -->
+          <div class="card side-widget">
+            <div class="card-header">
+              <span class="card-title">📂 분류별 현황</span>
+            </div>
+            <div class="donut-chart" id="catChart"></div>
+          </div>
+          <!-- 최근 접수 -->
+          <div class="card side-widget">
+            <div class="card-header">
+              <span class="card-title">🕐 최근 접수</span>
+            </div>
+            <div id="recentList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+  // 인증 확인 (Supabase Auth 세션)
+  (async () => {
+    const { data } = await window.sbClient.auth.getSession();
+    if (!data || !data.session) { location.href = 'admin-login.html'; return; }
+    const email = data.session.user.email || '관리자';
+    const name = (data.session.user.user_metadata && data.session.user.user_metadata.name) || email.split('@')[0];
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('adminName', name);
+    set('adminRole', '관리자');
+    set('adminAvatar', name[0].toUpperCase());
+  })();
+
+  async function logout() {
+    if (confirm('로그아웃 하시겠습니까?')) {
+      await window.sbClient.auth.signOut();
+      location.href = 'admin-login.html';
+    }
+  }
+
+  // Sidebar
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('mobileOverlay').classList.add('active');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('mobileOverlay').classList.remove('active');
+  }
+
+  const STATUS_LABEL = { received:'접수', in_progress:'처리 중', completed:'완료', rejected:'반려' };
+  const STATUS_BADGE = { received:'badge-received', in_progress:'badge-in_progress', completed:'badge-completed', rejected:'badge-rejected' };
+  const TYPE_LABEL = { defect:'하자', complaint:'민원' };
+  const CAT_LABEL = { construction:'건축·인테리어', equipment:'설비·공조', electric:'전기·통신', cleaning:'환경·청소', other:'기타' };
+  const PRI_LABEL = { low:'낮음', medium:'보통', high:'높음', urgent:'긴급' };
+  const PRI_ICON = { low:'🔵', medium:'🟢', high:'🟠', urgent:'🔴' };
+
+  let allItems = [], filtered = [], currentPage = 1;
+  const PER_PAGE = 15;
+
+  async function loadData() {
+    try {
+      const res = await fetch('tables/complaints?limit=500');
+      const data = await res.json();
+      allItems = (data.data || []).sort((a,b) => b.created_at - a.created_at);
+      updateKPI();
+      renderCatChart();
+      renderRecent();
+      applyFilter();
+    } catch(e) {
+      showToast('오류', '데이터 로드 실패', 'error');
+    }
+  }
+
+  function updateKPI() {
+    const total = allItems.length;
+    const received = allItems.filter(i=>i.status==='received').length;
+    const inProgress = allItems.filter(i=>i.status==='in_progress').length;
+    const urgent = allItems.filter(i=>i.priority==='urgent' && i.status!=='completed').length;
+    const now = new Date(); const m = now.getMonth(); const y = now.getFullYear();
+    const doneMonth = allItems.filter(i=>{
+      if(i.status!=='completed') return false;
+      const d=new Date(i.updated_at); return d.getFullYear()===y && d.getMonth()===m;
+    }).length;
+    const totalDone = allItems.filter(i=>i.status==='completed').length;
+    const rate = total > 0 ? Math.round(totalDone/total*100) : 0;
+
+    document.getElementById('kpiTotal').textContent = total;
+    document.getElementById('kpiNew').textContent = received;
+    document.getElementById('kpiDone').textContent = doneMonth;
+    document.getElementById('kpiRate').textContent = rate + '%';
+    document.getElementById('navTotal').textContent = total;
+    document.getElementById('navReceived').textContent = received;
+    document.getElementById('navProgress').textContent = inProgress;
+
+    if (urgent > 0) {
+      document.getElementById('emergencyBanner').style.display = 'flex';
+      document.getElementById('emergencyDesc').textContent = `긴급 ${urgent}건, 신규 ${received}건이 처리를 기다리고 있습니다`;
+    }
+  }
+
+  function renderCatChart() {
+    const cats = { construction:0, equipment:0, electric:0, cleaning:0, other:0 };
+    allItems.forEach(i => { if(cats[i.category]!==undefined) cats[i.category]++; });
+    const total = allItems.length || 1;
+    const colors = { construction:'#ec4899', equipment:'#f59e0b', electric:'#3b82f6', cleaning:'#10b981', other:'#8b5cf6' };
+    const names = { construction:'건축·인테리어', equipment:'설비·공조', electric:'전기·통신', cleaning:'환경·청소', other:'기타' };
+    const html = Object.entries(cats).map(([k,v]) => {
+      const pct = Math.round(v/total*100);
+      return `<div class="donut-item">
+        <span class="donut-dot" style="background:${colors[k]};"></span>
+        <span class="donut-label">${names[k]}</span>
+        <div class="donut-bar-wrap"><div class="donut-bar" style="width:${pct}%; background:${colors[k]};"></div></div>
+        <span class="donut-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+    document.getElementById('catChart').innerHTML = html;
+  }
+
+  function renderRecent() {
+    const recent = allItems.slice(0,5);
+    if (recent.length === 0) { document.getElementById('recentList').innerHTML = '<div class="empty-state"><div class="ei">📭</div></div>'; return; }
+    document.getElementById('recentList').innerHTML = recent.map(item => {
+      const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR', {month:'2-digit',day:'2-digit'}) : '—';
+      return `<div class="widget-item" onclick="location.href='admin-detail.html?id=${item.id}'">
+        <div class="widget-left">
+          <span class="widget-icon">${item.type==='defect'?'🔧':'📢'}</span>
+          <div>
+            <div class="widget-title" style="font-size:12px;">${(item.title||'').substring(0,18)}${(item.title||'').length>18?'…':''}</div>
+            <div class="widget-sub">${item.submitter_name||'—'} · ${date}</div>
+          </div>
+        </div>
+        <span class="badge ${STATUS_BADGE[item.status]||'badge-received'}">${STATUS_LABEL[item.status]||'접수'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function filterByStatus(status) {
+    document.getElementById('statusFilter').value = status;
+    applyFilter();
+    const labels = { '':'전체 민원 목록', received:'📥 신규 접수', in_progress:'⚙️ 처리 중', completed:'✅ 완료', rejected:'🚫 반려' };
+    document.getElementById('tableTitle').textContent = labels[status] || '📋 전체 민원 목록';
+    document.getElementById('topbarTitle').textContent = labels[status]?.replace(/^[^\s]+ /,'') || '대시보드';
+  }
+
+  function applyFilter() {
+    const kw = document.getElementById('searchInput').value.toLowerCase().trim();
+    const status = document.getElementById('statusFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const pri = document.getElementById('priFilter').value;
+    filtered = allItems.filter(i => {
+      const matchKw = !kw || [i.ticket_number, i.title, i.submitter_name, i.assigned_to].filter(Boolean).some(v => String(v).toLowerCase().includes(kw));
+      return matchKw && (!status || i.status===status) && (!type || i.type===type) && (!pri || i.priority===pri);
+    });
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const start = (currentPage-1)*PER_PAGE;
+    const page = filtered.slice(start, start+PER_PAGE);
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="ei">🔍</div><div style="font-size:14px; color:#64748b;">검색 결과 없음</div></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = page.map(item => {
+      const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '—';
+      const priBadge = item.priority==='urgent'?'badge-priority-urgent':(item.priority==='high'?'badge-priority-high':'');
+      return `<tr onclick="location.href='admin-detail.html?id=${item.id}'">
+        <td><span class="ticket-num">${item.ticket_number||'—'}</span></td>
+        <td>
+          <span class="badge ${item.type==='defect'?'badge-defect':'badge-complaint'}">${TYPE_LABEL[item.type]||'—'}</span><br>
+          <span style="font-size:11px; color:#94a3b8;">${CAT_LABEL[item.category]||'—'}</span>
+        </td>
+        <td style="max-width:180px; font-weight:600; font-size:13px;">${(item.title||'').substring(0,22)}${(item.title||'').length>22?'…':''}</td>
+        <td style="font-size:12px;">${item.submitter_name||'—'}</td>
+        <td style="font-size:12px; color:#64748b;">${item.department||'—'}${item.floor?' / '+item.floor:''}</td>
+        <td><span class="${priBadge?'badge '+priBadge:''}">${PRI_ICON[item.priority]||''} ${PRI_LABEL[item.priority]||'—'}</span></td>
+        <td><span class="badge ${STATUS_BADGE[item.status]||'badge-received'}">${STATUS_LABEL[item.status]||'—'}</span></td>
+        <td style="font-size:12px; color:#64748b;">${item.assigned_to||'<span style=\'color:#fca5a5;\'>미배정</span>'}</td>
+        <td style="font-size:12px; color:#94a3b8;">${date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPagination() {
+    const total = Math.ceil(filtered.length / PER_PAGE);
+    const pag = document.getElementById('pagination');
+    if (total <= 1) { pag.innerHTML = ''; return; }
+    let html = `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || Math.abs(i-currentPage) <= 1) {
+        html += `<button class="pg-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      } else if (Math.abs(i-currentPage) === 2) {
+        html += `<span style="padding:0 4px; color:#94a3b8;">…</span>`;
+      }
+    }
+    html += `<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+    pag.innerHTML = html;
+  }
+
+  function goPage(p) {
+    const total = Math.ceil(filtered.length / PER_PAGE);
+    if (p < 1 || p > total) return;
+    currentPage = p;
+    renderTable();
+    renderPagination();
+  }
+
+  function showToast(title, msg, type='info') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = `<div><div style="font-size:13px;font-weight:700;color:#0f172a;">${title}</div><div style="font-size:12px;color:#64748b;margin-top:2px;">${msg}</div></div>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  loadData();
+</script>
+</body>
+</html>
