@@ -350,7 +350,7 @@
       align-items: center;
       justify-content: space-between;
       transition: all 0.2s;
-      cursor: default;
+      cursor: pointer;
     }
     .stat-item:hover { background: #f0fdf4; border-color: #86efac; transform: translateX(4px); }
     .stat-item-left { display: flex; align-items: center; gap: 14px; }
@@ -906,7 +906,7 @@
           <span class="live-badge"><span class="live-dot"></span> LIVE</span>
         </div>
         <div class="stat-items">
-          <div class="stat-item">
+          <a class="stat-item" href="status.html?status=received">
             <div class="stat-item-left">
               <div class="stat-item-icon blue">📥</div>
               <div>
@@ -915,8 +915,8 @@
               </div>
             </div>
             <span class="stat-item-val" id="cardReceived">—</span>
-          </div>
-          <div class="stat-item">
+          </a>
+          <a class="stat-item" href="status.html?status=in_progress">
             <div class="stat-item-left">
               <div class="stat-item-icon orange">⚙️</div>
               <div>
@@ -925,8 +925,8 @@
               </div>
             </div>
             <span class="stat-item-val" id="cardInProgress">—</span>
-          </div>
-          <div class="stat-item">
+          </a>
+          <a class="stat-item" href="status.html?status=completed">
             <div class="stat-item-left">
               <div class="stat-item-icon green">✅</div>
               <div>
@@ -935,8 +935,8 @@
               </div>
             </div>
             <span class="stat-item-val" id="cardCompleted">—</span>
-          </div>
-          <div class="stat-item">
+          </a>
+          <a class="stat-item" href="status.html?priority=urgent">
             <div class="stat-item-left">
               <div class="stat-item-icon purple">🚨</div>
               <div>
@@ -945,7 +945,7 @@
               </div>
             </div>
             <span class="stat-item-val" id="cardUrgent">—</span>
-          </div>
+          </a>
         </div>
         <div class="hero-card-footer">
           <a href="status.html" class="hero-card-link">

@@ -553,6 +553,23 @@
   let currentPage = 1;
   const PER_PAGE = 10;
   let activeStatus = '';
+  let activePriority = '';
+
+  // URL 파라미터로 초기 필터 설정 (메인페이지 통계 카드 클릭 진입)
+  (function applyUrlFilter() {
+    const urlParams = new URLSearchParams(location.search);
+    const status = urlParams.get('status') || '';
+    activePriority = urlParams.get('priority') || '';
+    if (status) {
+      activeStatus = status;
+      document.getElementById('filterStatus').value = status;
+      const map = { received:'sumReceived', in_progress:'sumProgress', completed:'sumCompleted', rejected:'sumRejected' };
+      if (map[status]) {
+        document.querySelectorAll('.sum-card').forEach(c => c.classList.remove('active'));
+        document.getElementById(map[status])?.classList.add('active');
+      }
+    }
+  })();
 
   async function loadData() {
     try {
@@ -600,7 +617,8 @@
       const matchStatus = !status || item.status === status;
       const matchType = !type || item.type === type;
       const matchCat = !cat || item.category === cat;
-      return matchKw && matchStatus && matchType && matchCat;
+      const matchPriority = !activePriority || item.priority === activePriority;
+      return matchKw && matchStatus && matchType && matchCat && matchPriority;
     });
 
     currentPage = 1;
@@ -614,6 +632,7 @@
     document.getElementById('filterType').value = '';
     document.getElementById('filterCat').value = '';
     document.getElementById('heroSearch').value = '';
+    activePriority = '';
     filterByStatus('');
   }
 
