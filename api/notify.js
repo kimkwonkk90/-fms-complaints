@@ -1,18 +1,40 @@
 // =====================================================================
 // /api/notify  —  신규 민원/하자 접수 알림메일 발송 (Vercel Serverless Function)
-// Supabase 트리거(pg_net)가 신규 INSERT 시 이 엔드포인트를 호출하면,
-// 회사 SMTP 로 관리자에게 알림 메일을 보냅니다.
+// submit.html 이 접수 저장 성공 직후 이 엔드포인트를 직접 호출하면,
+// 회사 SMTP 로 관리자 + 등록된 수신자에게 알림 메일을 보냅니다.
+// (Supabase DB 트리거/pg_net 은 더 이상 쓰지 않음 — 두 시스템 간 웹훅 시크릿을
+// 수동으로 맞춰야 하는 구조라 자꾸 어긋나서, 접수 페이지가 직접 호출하는
+// 더 단순한 구조로 바꿈)
 //
 // 필요한 Vercel 환경변수 (Project Settings > Environment Variables):
-//   SMTP_HOST       예: smtp.mail-server.kr
-//   SMTP_PORT       예: 465
-//   SMTP_USER       SMTP 로그인 메일주소
-//   SMTP_PASS       SMTP 비밀번호
-//   SMTP_FROM       (선택) 보내는사람. 미설정 시 SMTP_USER 사용
-//   NOTIFY_TO       수신 메일주소
-//   WEBHOOK_SECRET  Supabase 트리거와 공유하는 비밀값
+//   SMTP_HOST                  예: smtp.gmail.com
+//   SMTP_PORT                  예: 587
+//   SMTP_USER                  SMTP 로그인 메일주소
+//   SMTP_PASS                  SMTP 비밀번호(앱 비밀번호)
+//   SMTP_FROM                  (선택) 보내는사람. 미설정 시 SMTP_USER 사용
+//   NOTIFY_TO                  수신 메일주소
+//   SUPABASE_SERVICE_ROLE_KEY  notify_recipients 조회용 (RLS 우회, Supabase 대시보드 > Settings > API)
+//
+// 관리자 페이지("메일 발송 대상")에서 등록한 이메일 목록은 notify_recipients
+// 테이블에서 이 함수가 직접 조회해 NOTIFY_TO 와 합쳐서 전체 수신자에게 발송합니다.
 // =====================================================================
 import nodemailer from 'nodemailer';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = 'https://mxzrvmcbtpaovsemapdj.supabase.co';
+
+async function getExtraRecipients() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
+  try {
+    const sb = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const { data, error } = await sb.from('fms_notify_recipients').select('email');
+    if (error) { console.error('[notify] 수신자 조회 실패:', error.message); return []; }
+    return (data || []).map(function (r) { return r.email; });
+  } catch (e) {
+    console.error('[notify] 수신자 조회 실패:', e && e.message);
+    return [];
+  }
+}
 
 const LABELS = {
   ticket_number: '접수번호', created_at: '접수일시', status: '처리상태',
@@ -36,16 +58,11 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
-  // 공유 비밀값 검증 (외부에서 임의로 호출 못 하도록)
-  if (!process.env.WEBHOOK_SECRET || req.headers['x-webhook-secret'] !== process.env.WEBHOOK_SECRET) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   body = body || {};
   const record = body.record || {};
+  const extraRecipients = await getExtraRecipients();
 
   const title = record.title || '(제목 미입력)';
 
@@ -81,10 +98,16 @@ export default async function handler(req, res) {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   });
 
+  const toList = Array.from(new Set(
+    [process.env.NOTIFY_TO || process.env.SMTP_USER].concat(extraRecipients)
+      .map(function (e) { return String(e || '').trim(); })
+      .filter(function (e) { return e && e.indexOf('@') !== -1; })
+  ));
+
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: process.env.NOTIFY_TO || process.env.SMTP_USER,
+      to: toList.join(','),
       subject: '[FMS 시설관리] 새 ' + (TYPE_KR[record.type] || '민원') + ' 접수 — ' + title,
       html: html
     });

@@ -948,6 +948,13 @@
       if (!res.ok) throw new Error('API 오류');
       document.getElementById('successTicketNum').textContent = ticketNum;
       document.getElementById('successScreen').classList.add('active');
+
+      // 알림메일 발송 — 실패해도 접수 자체는 이미 완료된 것이므로 화면에는 영향 없음
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record: Object.assign({ created_at: Date.now() }, payload) })
+      }).catch(function (e) { console.error('알림메일 발송 요청 실패:', e); });
     } catch(e) {
       showToast('오류 발생', '접수 중 오류가 발생했습니다. 다시 시도해 주세요.', 'error');
     } finally {

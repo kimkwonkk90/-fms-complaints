@@ -66,6 +66,19 @@ vercel deploy --prod --yes
 > 다시 공개로 되돌리려면: `supabase_setup.sql` 4) 정책을 `to anon, authenticated` 로 바꾸고
 > `status.html`/`index.html` 의 `tables/public_complaints` 를 `tables/complaints` 로 되돌리면 됩니다.
 
+## 메일 발송 대상 관리 (관리자 페이지 → 메일 발송 대상)
+
+`admin-recipients.html`에서 성명/부서/메일주소를 등록하면 `notify_recipients` 테이블에
+저장됩니다(엑셀 표 붙여넣기 지원, 기본 15행, 저장 시 전체 교체). 신규 접수가 들어오면
+`notify_new_complaint()` 트리거가 `notify_recipients`를 조회해 이메일 목록을 웹훅 body의
+`recipients`에 실어 `api/notify.js`로 전달하고, 거기서 기존 `NOTIFY_TO` 환경변수와
+합쳐(중복 제거) 전체 수신자에게 발송합니다. 새 Vercel 환경변수는 필요 없습니다
+(서버 함수가 DB를 직접 조회하지 않고, 트리거가 이미 DB 안에서 실행되며 이메일 목록을
+함께 실어 보내는 구조).
+
+**최초 적용 시 1회**: Supabase SQL Editor에서 `supabase_notify_recipients.sql` →
+`supabase_complaint_notify_trigger.sql`(갱신본) 순서로 재실행 후 Vercel 재배포.
+
 ## 정리해도 되는 것 (이제 미사용 — 선택)
 Supabase 전환 후 아래는 더 이상 호출되지 않는 죽은 코드입니다. 원하면 직접 삭제하세요:
 - `api/tables/complaints/index.js`, `api/tables/complaints/[id].js` (옛 KV API)

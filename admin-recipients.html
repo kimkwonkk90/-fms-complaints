@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>메일 발송 대상 - FMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.6; overflow: hidden; }
+
+    /* ── APP LAYOUT ── */
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: #14532d;
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
+      position: relative; z-index: 10;
+      transition: width 0.3s;
+    }
+    .sidebar-logo {
+      padding: 22px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(22,163,74,0.4);
+    }
+    .sidebar-logo-text .lmain { font-size: 16px; font-weight: 800; color: #fff; line-height: 1; }
+    .sidebar-logo-text .lsub { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 400; margin-top: 3px; }
+
+    .sidebar-admin {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .admin-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .admin-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+    .sidebar-nav { flex: 1; padding: 12px 12px; overflow-y: auto; }
+    .nav-section-title {
+      font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.25);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 12px 12px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 12px; border-radius: 9px;
+      font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.55);
+      cursor: pointer; transition: all 0.2s; margin-bottom: 2px;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .nav-item .nav-icon { width: 20px; text-align: center; font-size: 15px; }
+
+    .sidebar-bottom {
+      padding: 12px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .sidebar-bottom a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 9px;
+      font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4);
+      text-decoration: none; transition: all 0.2s; margin-bottom: 2px;
+    }
+    .sidebar-bottom a:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
+    .logout-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 9px;
+      font-size: 13px; font-weight: 600; color: #f87171;
+      cursor: pointer; transition: all 0.2s; border: none; background: none; width: 100%;
+    }
+    .logout-btn:hover { background: rgba(239,68,68,0.1); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      height: 60px; display: flex; align-items: center;
+      padding: 0 28px; gap: 16px; flex-shrink: 0;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+    }
+    .mobile-menu-btn { display: none; background: none; border: none; font-size: 18px; cursor: pointer; color: #475569; }
+    .topbar-title { font-size: 17px; font-weight: 800; color: #0f172a; flex: 1; }
+    .topbar-btn {
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; gap: 7px;
+      font-family: inherit;
+    }
+    .topbar-btn-primary { background: #16a34a; color: #fff; }
+    .topbar-btn-primary:hover { background: #15803d; }
+    .topbar-btn-outline { background: #fff; color: #475569; border: 1.5px solid #e2e8f0; }
+    .topbar-btn-outline:hover { border-color: #94a3b8; }
+
+    /* ── SCROLL AREA ── */
+    .scroll-area { flex: 1; overflow-y: auto; padding: 28px; }
+
+    /* ── CARD ── */
+    .card {
+      background: #fff; border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .card-title { font-size: 15px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .card-desc { padding: 14px 22px; font-size: 13px; color: #64748b; border-bottom: 1px solid #f1f5f9; }
+
+    /* ── SHEET TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: #f8fafc; padding: 11px 16px;
+      text-align: left; font-weight: 700; color: #475569;
+      font-size: 12px; border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    thead th[contenteditable] { cursor: text; }
+    thead th[contenteditable]:focus { outline: 2px solid #16a34a; outline-offset: -2px; background: #f0fdf4; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: 0; vertical-align: middle; }
+    .sheet-input {
+      width: 100%; padding: 10px 16px; border: none; background: transparent;
+      font-size: 13px; font-family: inherit; color: #1e293b; outline: none;
+    }
+    .sheet-input:focus { background: #f0fdf4; box-shadow: inset 0 0 0 2px rgba(22,163,74,0.25); }
+    .row-del-btn {
+      width: 100%; padding: 10px; border: none; background: none;
+      color: #cbd5e1; cursor: pointer; transition: color 0.2s;
+    }
+    .row-del-btn:hover { color: #ef4444; }
+
+    /* TOAST */
+    .toast-wrap { position: fixed; top: 70px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 13px 16px; display: flex; align-items: flex-start; gap: 10px; min-width: 260px; border-left: 3px solid #16a34a; animation: slideIn 0.3s ease; }
+    .toast.success { border-color: #10b981; }
+    .toast.error { border-color: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* MOBILE OVERLAY */
+    .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9; }
+    .mobile-overlay.active { display: block; }
+
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 100; transition: left 0.3s; }
+      .sidebar.open { left: 0; }
+      .mobile-menu-btn { display: block; }
+      .scroll-area { padding: 20px; }
+    }
+  </style>
+  <!-- Supabase: ① supabase-js → ② config → ③ db.js (로드 순서 중요) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="lmain">FMS Admin</div>
+        <div class="lsub">시설관리 관리자</div>
+      </div>
+    </div>
+    <div class="sidebar-admin">
+      <div class="admin-avatar" id="adminAvatar">A</div>
+      <div>
+        <div class="admin-name" id="adminName">관리자</div>
+        <div class="admin-role" id="adminRole">슈퍼 관리자</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">메인</div>
+      <a href="admin-dashboard.html" class="nav-item">
+        <span class="nav-icon">📊</span> 대시보드
+      </a>
+      <a href="admin-stats.html" class="nav-item">
+        <span class="nav-icon">📈</span> 통계 분석
+      </a>
+      <div class="nav-section-title">시스템</div>
+      <a href="admin-recipients.html" class="nav-item active">
+        <span class="nav-icon">📧</span> 메일 발송 대상
+      </a>
+      <a href="index.html" class="nav-item" target="_blank">
+        <span class="nav-icon">🌐</span> 사용자 사이트
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> 로그아웃
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="mobile-menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title">📧 메일 발송 대상</span>
+    </div>
+
+    <!-- SCROLL AREA -->
+    <div class="scroll-area">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📧 메일 발송 대상</span>
+          <div style="display:flex; gap:8px;">
+            <button class="topbar-btn topbar-btn-outline" onclick="addRecipientRows(1)" style="font-size:12px; padding:6px 12px;">
+              <i class="fas fa-plus"></i> 행 추가
+            </button>
+            <button class="topbar-btn topbar-btn-primary" onclick="saveRecipients()" style="font-size:12px; padding:6px 12px;">
+              <i class="fas fa-save"></i> 저장
+            </button>
+          </div>
+        </div>
+        <p class="card-desc">신규 접수 알림메일을 받을 대상을 등록하세요. 엑셀에서 표를 복사해 셀에 붙여넣으면 자동으로 채워집니다.</p>
+        <div class="table-wrap">
+          <table id="recipientSheet">
+            <thead>
+              <tr>
+                <th contenteditable="true" spellcheck="false">성명</th>
+                <th contenteditable="true" spellcheck="false">부서</th>
+                <th contenteditable="true" spellcheck="false">메일주소</th>
+                <th style="width:40px;"></th>
+              </tr>
+            </thead>
+            <tbody id="recipientSheetBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+  // 인증 확인 (Supabase Auth 세션)
+  (async () => {
+    const { data } = await window.sbClient.auth.getSession();
+    if (!data || !data.session) { location.href = 'admin-login.html'; return; }
+    const email = data.session.user.email || '관리자';
+    const name = (data.session.user.user_metadata && data.session.user.user_metadata.name) || email.split('@')[0];
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('adminName', name);
+    set('adminRole', '관리자');
+    set('adminAvatar', name[0].toUpperCase());
+    loadRecipients();
+  })();
+
+  async function logout() {
+    if (confirm('로그아웃 하시겠습니까?')) {
+      await window.sbClient.auth.signOut();
+      location.href = 'admin-login.html';
+    }
+  }
+
+  // Sidebar
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('mobileOverlay').classList.add('active');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('mobileOverlay').classList.remove('active');
+  }
+
+  // 실패한 Supabase REST 응답에서 원인 메시지를 뽑아낸다 (PostgREST 에러 바디는
+  // 보통 {message, code, details, hint} 형태).
+  async function describeError(res) {
+    try {
+      const j = await res.clone().json();
+      return j.message || j.error || JSON.stringify(j);
+    } catch (e) {
+      try { return await res.clone().text(); } catch (e2) { return ''; }
+    }
+  }
+
+  function showToast(title, msg, type='info') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = `<div><div style="font-size:13px;font-weight:700;color:#0f172a;">${title}</div><div style="font-size:12px;color:#64748b;margin-top:2px;">${msg}</div></div>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), type === 'error' ? 12000 : 4000);
+  }
+
+  // ===== 메일 발송 대상 시트 =====
+  const RECIPIENT_MIN_ROWS = 15;
+
+  function buildRecipientRow(values) {
+    values = values || ['', '', ''];
+    const tr = document.createElement('tr');
+    values.forEach(function (val, ci) {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = val || '';
+      input.className = 'sheet-input';
+      input.addEventListener('paste', function (e) { handleRecipientPaste(e, tr, ci); });
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+    const tdDel = document.createElement('td');
+    tdDel.style.textAlign = 'center';
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'row-del-btn';
+    delBtn.innerHTML = '<i class="fas fa-times"></i>';
+    delBtn.onclick = function () { tr.remove(); };
+    tdDel.appendChild(delBtn);
+    tr.appendChild(tdDel);
+    return tr;
+  }
+
+  function addRecipientRow(values) {
+    document.getElementById('recipientSheetBody').appendChild(buildRecipientRow(values));
+  }
+
+  function addRecipientRows(n) {
+    for (let i = 0; i < n; i++) addRecipientRow();
+  }
+
+  // 셀에 여러 줄/여러 칸(엑셀 표)을 붙여넣으면 현재 위치부터 자동으로 채워짐.
+  // 값이 하나뿐인 일반 붙여넣기는 브라우저 기본 동작(현재 칸에만 입력)을 그대로 둔다.
+  function handleRecipientPaste(e, tr, colIndex) {
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    if (!text) return;
+    const rows = text.replace(/\r/g, '').split('\n').filter(function (r, idx, arr) {
+      return !(idx === arr.length - 1 && r === '');
+    });
+    if (rows.length <= 1 && rows[0].indexOf('\t') === -1) return;
+    e.preventDefault();
+
+    const tbody = document.getElementById('recipientSheetBody');
+    const trList = Array.prototype.slice.call(tbody.children);
+    const startIdx = trList.indexOf(tr);
+
+    rows.forEach(function (rowText, rIdx) {
+      let targetTr = trList[startIdx + rIdx];
+      if (!targetTr) {
+        targetTr = buildRecipientRow();
+        tbody.appendChild(targetTr);
+        trList.push(targetTr);
+      }
+      rowText.split('\t').forEach(function (val, cIdx) {
+        const col = colIndex + cIdx;
+        if (col > 2) return;
+        const input = targetTr.children[col].querySelector('input');
+        if (input) input.value = val.trim();
+      });
+    });
+  }
+
+  async function loadRecipients() {
+    const tbody = document.getElementById('recipientSheetBody');
+    tbody.innerHTML = '';
+    try {
+      const res = await fetch('tables/fms_notify_recipients?limit=1000');
+      const data = await res.json();
+      // db.js 는 목록을 항상 created_at 내림차순으로 주므로, 저장(전체교체) 시
+      // 입력했던 순서를 그대로 보여주려면 뒤집어야 한다.
+      const items = (data.data || []).slice().reverse();
+      items.forEach(function (item) {
+        addRecipientRow([item.name || '', item.department || '', item.email || '']);
+      });
+      addRecipientRows(Math.max(0, RECIPIENT_MIN_ROWS - items.length));
+    } catch (e) {
+      console.error(e);
+      addRecipientRows(RECIPIENT_MIN_ROWS);
+    }
+  }
+
+  async function saveRecipients() {
+    const tbody = document.getElementById('recipientSheetBody');
+    const rows = Array.prototype.map.call(tbody.children, function (tr) {
+      const inputs = tr.querySelectorAll('input');
+      return {
+        name: inputs[0].value.trim(),
+        department: inputs[1].value.trim(),
+        email: inputs[2].value.trim()
+      };
+    });
+    const nonEmpty = rows.filter(function (r) { return r.name || r.department || r.email; });
+    const invalid = nonEmpty.filter(function (r) { return !r.email || r.email.indexOf('@') === -1; });
+    const valid = nonEmpty.filter(function (r) { return r.email && r.email.indexOf('@') !== -1; });
+
+    if (invalid.length && !confirm('메일주소가 비어있거나 형식이 올바르지 않은 행이 ' + invalid.length + '개 있습니다. 해당 행은 제외하고 저장할까요?')) {
+      return;
+    }
+
+    try {
+      const existingRes = await fetch('tables/fms_notify_recipients?limit=1000');
+      const existingData = await existingRes.json();
+      const existing = existingData.data || [];
+      for (const item of existing) {
+        const delRes = await fetch('tables/fms_notify_recipients/' + item.id, { method: 'DELETE' });
+        if (!delRes.ok) throw new Error('기존 데이터 삭제 실패 (' + delRes.status + ') ' + (await describeError(delRes)));
+      }
+      for (const r of valid) {
+        const postRes = await fetch('tables/fms_notify_recipients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(r)
+        });
+        if (!postRes.ok) throw new Error(r.email + ' 등록 실패 (' + postRes.status + ') ' + (await describeError(postRes)));
+      }
+      showToast('저장 완료', valid.length + '명 등록되었습니다.', 'success');
+      // 저장 직후 목록을 다시 불러와 시트를 새로 그리지 않는다 — 이미 입력한
+      // 내용이 곧 저장된 내용이므로 화면은 그대로 둔다.
+    } catch (e) {
+      console.error(e);
+      showToast('오류', (e && e.message) || '저장 중 오류가 발생했습니다.', 'error');
+    }
+  }
+</script>
+</body>
+</html>
