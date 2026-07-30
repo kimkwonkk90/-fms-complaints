@@ -732,11 +732,12 @@
   async function deleteComplaint(id) {
     if (!confirm('이 민원을 삭제하시겠습니까? "삭제됨" 목록으로 이동되며, 필요하면 나중에 복구할 수 있습니다.')) return;
     try {
-      await fetch(`tables/complaints/${id}`, {
+      const res = await fetch(`tables/complaints/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deleted_at: Date.now() })
       });
+      if (!res.ok) throw new Error('API 오류');
       showToast('삭제 완료', '삭제됨 목록으로 이동했습니다.', 'success');
       loadData();
     } catch(e) {
@@ -747,11 +748,12 @@
   async function restoreComplaint(id) {
     if (!confirm('이 민원을 복구하시겠습니까?')) return;
     try {
-      await fetch(`tables/complaints/${id}`, {
+      const res = await fetch(`tables/complaints/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deleted_at: null })
       });
+      if (!res.ok) throw new Error('API 오류');
       showToast('복구 완료', '민원이 복구되었습니다.', 'success');
       loadData();
     } catch(e) {
