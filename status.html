@@ -96,7 +96,7 @@
     }
     .status-summary-inner {
       max-width: 1280px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(5,1fr);
+      display: grid; grid-template-columns: repeat(4,1fr);
     }
     .sum-card {
       padding: 20px 24px;
@@ -348,7 +348,7 @@
 
     /* RESPONSIVE */
     @media (max-width: 1024px) {
-      .status-summary-inner { grid-template-columns: repeat(3,1fr); }
+      .status-summary-inner { grid-template-columns: repeat(2,1fr); }
     }
     @media (max-width: 768px) {
       .header { padding: 0 20px; }
@@ -451,13 +451,6 @@
       <div>
         <div class="sum-label">처리 완료</div>
         <div class="sum-val" id="cntCompleted">—</div>
-      </div>
-    </div>
-    <div class="sum-card" style="--color:#ef4444; --icon-bg:#fef2f2;" onclick="filterByStatus('rejected')" id="sumRejected">
-      <div class="sum-icon">🚫</div>
-      <div>
-        <div class="sum-label">반려</div>
-        <div class="sum-val" id="cntRejected">—</div>
       </div>
     </div>
   </div>
@@ -563,7 +556,7 @@
     if (status) {
       activeStatus = status;
       document.getElementById('filterStatus').value = status;
-      const map = { received:'sumReceived', in_progress:'sumProgress', completed:'sumCompleted', rejected:'sumRejected' };
+      const map = { received:'sumReceived', in_progress:'sumProgress', completed:'sumCompleted' };
       if (map[status]) {
         document.querySelectorAll('.sum-card').forEach(c => c.classList.remove('active'));
         document.getElementById(map[status])?.classList.add('active');
@@ -593,13 +586,12 @@
     document.getElementById('cntReceived').textContent = allItems.filter(i=>i.status==='received').length;
     document.getElementById('cntProgress').textContent = allItems.filter(i=>i.status==='in_progress').length;
     document.getElementById('cntCompleted').textContent = allItems.filter(i=>i.status==='completed').length;
-    document.getElementById('cntRejected').textContent = allItems.filter(i=>i.status==='rejected').length;
   }
 
   function filterByStatus(status) {
     activeStatus = status;
     document.querySelectorAll('.sum-card').forEach(c => c.classList.remove('active'));
-    const map = { '':'sumAll', received:'sumReceived', in_progress:'sumProgress', completed:'sumCompleted', rejected:'sumRejected' };
+    const map = { '':'sumAll', received:'sumReceived', in_progress:'sumProgress', completed:'sumCompleted' };
     document.getElementById(map[status])?.classList.add('active');
     document.getElementById('filterStatus').value = status;
     applyFilter();
