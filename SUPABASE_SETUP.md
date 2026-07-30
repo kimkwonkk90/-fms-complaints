@@ -79,6 +79,16 @@ vercel deploy --prod --yes
 **최초 적용 시 1회**: Supabase SQL Editor에서 `supabase_notify_recipients.sql` →
 `supabase_complaint_notify_trigger.sql`(갱신본) 순서로 재실행 후 Vercel 재배포.
 
+## 민원 삭제됨 보관 (관리자 페이지 → 대시보드 → 삭제됨)
+
+관리자가 민원을 삭제하면 실제로 행을 지우지 않고 `deleted_at`에 삭제 시각만 기록합니다
+(소프트 삭제). 사이드바 "삭제됨" 메뉴에서 삭제된 민원만 모아볼 수 있고, 상세 페이지의
+"복구" 버튼으로 언제든 되돌릴 수 있습니다. 공개 현황 페이지(`status.html`/`index.html`)가
+쓰는 `public_complaints` 뷰는 삭제된 민원을 제외하도록 되어 있어 삭제 즉시 공개 화면에서도
+사라집니다.
+
+**최초 적용 시 1회**: Supabase SQL Editor에서 `supabase_soft_delete.sql` 실행.
+
 ## 정리해도 되는 것 (이제 미사용 — 선택)
 Supabase 전환 후 아래는 더 이상 호출되지 않는 죽은 코드입니다. 원하면 직접 삭제하세요:
 - `api/tables/complaints/index.js`, `api/tables/complaints/[id].js` (옛 KV API)

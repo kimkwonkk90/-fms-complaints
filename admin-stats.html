@@ -263,7 +263,7 @@
     try {
       const res = await fetch('tables/complaints?limit=1000');
       const data = await res.json();
-      const items = data.data || [];
+      const items = (data.data || []).filter(i => !i.deleted_at);
       buildStats(items);
     } catch(e) {
       console.error(e);

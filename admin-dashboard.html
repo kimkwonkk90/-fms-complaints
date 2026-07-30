@@ -364,6 +364,10 @@
       <div class="nav-item" onclick="filterByStatus('completed')">
         <span class="nav-icon">✅</span> 완료
       </div>
+      <div class="nav-item" onclick="filterByStatus('deleted')">
+        <span class="nav-icon">🗑️</span> 삭제됨
+        <span class="nav-badge" id="navDeleted">0</span>
+      </div>
       <div class="nav-section-title">시스템</div>
       <a href="admin-recipients.html" class="nav-item">
         <span class="nav-icon">📧</span> 메일 발송 대상
@@ -461,6 +465,7 @@
                 <option value="in_progress">처리 중</option>
                 <option value="completed">완료</option>
                 <option value="rejected">반려</option>
+                <option value="deleted">삭제됨</option>
               </select>
               <select class="filter-select" id="typeFilter" onchange="applyFilter()">
                 <option value="">전체 유형</option>
@@ -488,10 +493,11 @@
                     <th>상태</th>
                     <th>담당자</th>
                     <th>접수일</th>
+                    <th>관리</th>
                   </tr>
                 </thead>
                 <tbody id="tableBody">
-                  <tr><td colspan="9" style="text-align:center; padding:40px; color:#94a3b8;">불러오는 중...</td></tr>
+                  <tr><td colspan="10" style="text-align:center; padding:40px; color:#94a3b8;">불러오는 중...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -578,17 +584,19 @@
   }
 
   function updateKPI() {
-    const total = allItems.length;
-    const received = allItems.filter(i=>i.status==='received').length;
-    const inProgress = allItems.filter(i=>i.status==='in_progress').length;
-    const urgent = allItems.filter(i=>i.priority==='urgent' && i.status!=='completed').length;
+    const items = allItems.filter(i=>!i.deleted_at);
+    const total = items.length;
+    const received = items.filter(i=>i.status==='received').length;
+    const inProgress = items.filter(i=>i.status==='in_progress').length;
+    const urgent = items.filter(i=>i.priority==='urgent' && i.status!=='completed').length;
     const now = new Date(); const m = now.getMonth(); const y = now.getFullYear();
-    const doneMonth = allItems.filter(i=>{
+    const doneMonth = items.filter(i=>{
       if(i.status!=='completed') return false;
       const d=new Date(i.updated_at); return d.getFullYear()===y && d.getMonth()===m;
     }).length;
-    const totalDone = allItems.filter(i=>i.status==='completed').length;
+    const totalDone = items.filter(i=>i.status==='completed').length;
     const rate = total > 0 ? Math.round(totalDone/total*100) : 0;
+    const deleted = allItems.filter(i=>i.deleted_at).length;
 
     document.getElementById('kpiTotal').textContent = total;
     document.getElementById('kpiNew').textContent = received;
@@ -597,6 +605,7 @@
     document.getElementById('navTotal').textContent = total;
     document.getElementById('navReceived').textContent = received;
     document.getElementById('navProgress').textContent = inProgress;
+    document.getElementById('navDeleted').textContent = deleted;
 
     if (urgent > 0) {
       document.getElementById('emergencyBanner').style.display = 'flex';
@@ -605,9 +614,10 @@
   }
 
   function renderCatChart() {
+    const items = allItems.filter(i=>!i.deleted_at);
     const cats = { construction:0, equipment:0, electric:0, cleaning:0, other:0 };
-    allItems.forEach(i => { if(cats[i.category]!==undefined) cats[i.category]++; });
-    const total = allItems.length || 1;
+    items.forEach(i => { if(cats[i.category]!==undefined) cats[i.category]++; });
+    const total = items.length || 1;
     const colors = { construction:'#ec4899', equipment:'#f59e0b', electric:'#3b82f6', cleaning:'#10b981', other:'#8b5cf6' };
     const names = { construction:'건축·인테리어', equipment:'설비·공조', electric:'전기·통신', cleaning:'환경·청소', other:'기타' };
     const html = Object.entries(cats).map(([k,v]) => {
@@ -623,7 +633,7 @@
   }
 
   function renderRecent() {
-    const recent = allItems.slice(0,5);
+    const recent = allItems.filter(i=>!i.deleted_at).slice(0,5);
     if (recent.length === 0) { document.getElementById('recentList').innerHTML = '<div class="empty-state"><div class="ei">📭</div></div>'; return; }
     document.getElementById('recentList').innerHTML = recent.map(item => {
       const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR', {month:'2-digit',day:'2-digit'}) : '—';
@@ -643,7 +653,7 @@
   function filterByStatus(status) {
     document.getElementById('statusFilter').value = status;
     applyFilter();
-    const labels = { '':'전체 민원 목록', received:'📥 신규 접수', in_progress:'⚙️ 처리 중', completed:'✅ 완료', rejected:'🚫 반려' };
+    const labels = { '':'전체 민원 목록', received:'📥 신규 접수', in_progress:'⚙️ 처리 중', completed:'✅ 완료', rejected:'🚫 반려', deleted:'🗑️ 삭제됨' };
     document.getElementById('tableTitle').textContent = labels[status] || '📋 전체 민원 목록';
     document.getElementById('topbarTitle').textContent = labels[status]?.replace(/^[^\s]+ /,'') || '대시보드';
   }
@@ -655,7 +665,8 @@
     const pri = document.getElementById('priFilter').value;
     filtered = allItems.filter(i => {
       const matchKw = !kw || [i.ticket_number, i.title, i.submitter_name, i.assigned_to].filter(Boolean).some(v => String(v).toLowerCase().includes(kw));
-      return matchKw && (!status || i.status===status) && (!type || i.type===type) && (!pri || i.priority===pri);
+      const matchStatus = status === 'deleted' ? !!i.deleted_at : (!i.deleted_at && (!status || i.status===status));
+      return matchKw && matchStatus && (!type || i.type===type) && (!pri || i.priority===pri);
     });
     currentPage = 1;
     renderTable();
@@ -667,12 +678,15 @@
     const start = (currentPage-1)*PER_PAGE;
     const page = filtered.slice(start, start+PER_PAGE);
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="ei">🔍</div><div style="font-size:14px; color:#64748b;">검색 결과 없음</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="ei">🔍</div><div style="font-size:14px; color:#64748b;">검색 결과 없음</div></div></td></tr>`;
       return;
     }
     tbody.innerHTML = page.map(item => {
       const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '—';
       const priBadge = item.priority==='urgent'?'badge-priority-urgent':(item.priority==='high'?'badge-priority-high':'');
+      const manageBtn = item.deleted_at
+        ? `<button class="topbar-btn topbar-btn-outline" style="font-size:11px; padding:5px 10px;" onclick="event.stopPropagation(); restoreComplaint('${item.id}')"><i class="fas fa-rotate-left"></i> 복구</button>`
+        : `<button class="topbar-btn" style="font-size:11px; padding:5px 10px; background:#fef2f2; color:#dc2626;" onclick="event.stopPropagation(); deleteComplaint('${item.id}')"><i class="fas fa-trash-alt"></i> 삭제</button>`;
       return `<tr onclick="location.href='admin-detail.html?id=${item.id}'">
         <td><span class="ticket-num">${item.ticket_number||'—'}</span></td>
         <td>
@@ -686,6 +700,7 @@
         <td><span class="badge ${STATUS_BADGE[item.status]||'badge-received'}">${STATUS_LABEL[item.status]||'—'}</span></td>
         <td style="font-size:12px; color:#64748b;">${item.assigned_to||'<span style=\'color:#fca5a5;\'>미배정</span>'}</td>
         <td style="font-size:12px; color:#94a3b8;">${date}</td>
+        <td>${manageBtn}</td>
       </tr>`;
     }).join('');
   }
@@ -712,6 +727,36 @@
     currentPage = p;
     renderTable();
     renderPagination();
+  }
+
+  async function deleteComplaint(id) {
+    if (!confirm('이 민원을 삭제하시겠습니까? "삭제됨" 목록으로 이동되며, 필요하면 나중에 복구할 수 있습니다.')) return;
+    try {
+      await fetch(`tables/complaints/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleted_at: Date.now() })
+      });
+      showToast('삭제 완료', '삭제됨 목록으로 이동했습니다.', 'success');
+      loadData();
+    } catch(e) {
+      showToast('오류', '삭제 중 오류가 발생했습니다.', 'error');
+    }
+  }
+
+  async function restoreComplaint(id) {
+    if (!confirm('이 민원을 복구하시겠습니까?')) return;
+    try {
+      await fetch(`tables/complaints/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleted_at: null })
+      });
+      showToast('복구 완료', '민원이 복구되었습니다.', 'success');
+      loadData();
+    } catch(e) {
+      showToast('오류', '복구 중 오류가 발생했습니다.', 'error');
+    }
   }
 
   function showToast(title, msg, type='info') {
