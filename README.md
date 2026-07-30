@@ -63,7 +63,7 @@
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| ticket_number | text | 접수 번호 (HC-YYYYMMDD-XXX) |
+| ticket_number | text | 접수 번호 (SG-YYYYMMDD-XXX, XXX는 당일 접수 순서) |
 | type | text | defect / complaint |
 | category | text | electric / equipment / cleaning / construction / other |
 | title | text | 제목 |

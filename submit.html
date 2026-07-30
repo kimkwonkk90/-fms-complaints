@@ -912,7 +912,18 @@
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 접수 중...';
 
-    const ticketNum = 'HC-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*900+100);
+    // 접수번호: SG-접수일자-당일 접수 순서(001부터)
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
+    const startOfDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const endOfDay = startOfDay + 24*60*60*1000;
+    let seq = 1;
+    try {
+      const cntRes = await fetch('tables/public_complaints?limit=1000');
+      const cntData = await cntRes.json();
+      seq = (cntData.data || []).filter(i => i.created_at >= startOfDay && i.created_at < endOfDay).length + 1;
+    } catch (e) { /* 조회 실패 시 001부터 시작 */ }
+    const ticketNum = 'SG-' + dateStr + '-' + String(seq).padStart(3, '0');
 
     // 사진은 Supabase Storage 에 업로드하고 공개 URL 만 저장한다.
     let photoUrls = [];
