@@ -664,11 +664,19 @@
     document.getElementById('topbarTitle').textContent = labels[status]?.replace(/^[^\s]+ /,'') || '대시보드';
   }
 
+  // 엑셀 다운로드 버튼은 지금 보고 있는 탭에 맞는 것만 노출한다.
+  // 전체 민원 탭 → "전체 민원" 버튼만, 완료 탭 → "완료 건" 버튼만, 나머지 탭은 둘 다 숨김.
+  function updateExportButtons(status) {
+    document.getElementById('exportAllExcelBtn').style.display = status === '' ? '' : 'none';
+    document.getElementById('exportExcelBtn').style.display = status === 'completed' ? '' : 'none';
+  }
+
   function applyFilter() {
     const kw = document.getElementById('searchInput').value.toLowerCase().trim();
     const status = document.getElementById('statusFilter').value;
     const type = document.getElementById('typeFilter').value;
     const pri = document.getElementById('priFilter').value;
+    updateExportButtons(status);
     filtered = allItems.filter(i => {
       const matchKw = !kw || [i.ticket_number, i.title, i.submitter_name, i.assigned_to].filter(Boolean).some(v => String(v).toLowerCase().includes(kw));
       // 완료 건은 "완료" 탭에서만 보이도록, 그 외 탭(전체 포함)에서는 제외한다.
