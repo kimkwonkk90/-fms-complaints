@@ -452,6 +452,7 @@
           <div class="card-header">
             <span class="card-title" id="tableTitle">📋 전체 민원 목록</span>
             <div style="display:flex; gap:8px;">
+              <button class="topbar-btn topbar-btn-primary" id="exportAllExcelBtn" onclick="exportAllExcel()" style="font-size:12px; padding:6px 12px;"><i class="fas fa-file-excel"></i> 전체 민원 엑셀 다운로드</button>
               <button class="topbar-btn topbar-btn-primary" id="exportExcelBtn" onclick="exportCompletedExcel()" style="font-size:12px; padding:6px 12px;"><i class="fas fa-file-excel"></i> 완료 건 엑셀 다운로드</button>
               <button class="topbar-btn topbar-btn-outline" onclick="loadData()" style="font-size:12px; padding:6px 12px;"><i class="fas fa-sync"></i> 새로고침</button>
             </div>
@@ -828,14 +829,14 @@
     return new Date(ts).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
-  async function exportCompletedExcel() {
-    const rows = allItems.filter(i => i.status === 'completed' && !i.deleted_at);
+  // rows: 내보낼 민원 배열, opts: { btnId, sheetName, fileNamePrefix, emptyMsg }
+  async function exportComplaintsExcel(rows, opts) {
     if (rows.length === 0) {
-      showToast('알림', '완료된 민원이 없습니다.', 'info');
+      showToast('알림', opts.emptyMsg, 'info');
       return;
     }
 
-    const btn = document.getElementById('exportExcelBtn');
+    const btn = document.getElementById(opts.btnId);
     const originalHtml = btn.innerHTML;
     btn.disabled = true;
 
@@ -844,7 +845,7 @@
       workbook.creator = 'FMS';
       workbook.created = new Date();
 
-      const sheet = workbook.addWorksheet('완료 민원');
+      const sheet = workbook.addWorksheet(opts.sheetName);
       sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
       const MAX_PHOTOS = 5;
@@ -855,6 +856,7 @@
 
       sheet.columns = [
         { header: '접수번호', key: 'ticket', width: 16 },
+        { header: '상태', key: 'status', width: 9 },
         { header: '유형', key: 'type', width: 8 },
         { header: '분류', key: 'category', width: 14 },
         { header: '제목', key: 'title', width: 26 },
@@ -880,7 +882,7 @@
       headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } };
       headerRow.height = 20;
 
-      const photoStartCol = 17; // 접수사진1 컬럼 번호(1-based)
+      const photoStartCol = 18; // 접수사진1 컬럼 번호(1-based) — '상태' 컬럼이 추가되어 한 칸 밀림
       const resultPhotoStartCol = photoStartCol + MAX_PHOTOS;
 
       const photoJobs = [];
@@ -889,6 +891,7 @@
         const row = sheet.getRow(rowNumber);
         row.values = {
           ticket: item.ticket_number || '',
+          status: STATUS_LABEL[item.status] || item.status || '',
           type: TYPE_LABEL[item.type] || item.type || '',
           category: CAT_LABEL[item.category] || item.category || '',
           title: item.title || '',
@@ -932,20 +935,40 @@
       const today = new Date().toISOString().slice(0, 10);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `완료민원_${today}.xlsx`;
+      a.download = `${opts.fileNamePrefix}_${today}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(blobUrl);
 
-      showToast('다운로드 완료', `완료 민원 ${rows.length}건을 엑셀로 내보냈습니다.`, 'success');
+      showToast('다운로드 완료', `민원 ${rows.length}건을 엑셀로 내보냈습니다.`, 'success');
     } catch (e) {
-      console.error('[exportCompletedExcel] 실패:', e);
+      console.error('[exportComplaintsExcel] 실패:', e);
       showToast('오류', '엑셀 생성 중 오류가 발생했습니다.', 'error');
     } finally {
       btn.disabled = false;
       btn.innerHTML = originalHtml;
     }
+  }
+
+  function exportCompletedExcel() {
+    const rows = allItems.filter(i => i.status === 'completed' && !i.deleted_at);
+    return exportComplaintsExcel(rows, {
+      btnId: 'exportExcelBtn',
+      sheetName: '완료 민원',
+      fileNamePrefix: '완료민원',
+      emptyMsg: '완료된 민원이 없습니다.',
+    });
+  }
+
+  function exportAllExcel() {
+    const rows = allItems.filter(i => !i.deleted_at);
+    return exportComplaintsExcel(rows, {
+      btnId: 'exportAllExcelBtn',
+      sheetName: '전체 민원',
+      fileNamePrefix: '전체민원',
+      emptyMsg: '내보낼 민원이 없습니다.',
+    });
   }
 
   function showToast(title, msg, type='info') {
