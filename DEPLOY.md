@@ -1,3 +1,21 @@
+## 📌 사진 저장소 변경 안내
+
+민원 첨부사진(접수 사진 / 처리결과 사진)은 이제 self-hosted Supabase Storage
+(`storage-seegene.cloud`)에 저장됩니다. DB(민원 데이터)와 로그인(Auth)은
+기존 클라우드 Supabase를 그대로 사용합니다. 설정값은 `supabase-config.js`의
+`STORAGE_URL` / `STORAGE_ANON_KEY` / `STORAGE_BUCKET`, 버킷 정책은
+`storage_selfhosted_setup.sql`을 참고하세요.
+
+**⚠️ Vercel 환경변수 추가 필요**: 민원 상세 화면의 "영구 삭제" 버튼은
+`/api/storage-delete` 서버리스 함수로 self-hosted storage의 사진 파일을
+삭제하는데, 이 함수는 `SELFHOSTED_STORAGE_SERVICE_ROLE_KEY` 환경변수(self-hosted
+storage 인스턴스의 service_role key)가 있어야 동작합니다. Vercel 대시보드 →
+프로젝트 → **Settings → Environment Variables**에서 추가한 뒤 다시 배포하세요.
+설정하지 않아도 민원 데이터 삭제 자체는 되지만, 사진 파일은 storage에 그대로
+남습니다.
+
+---
+
 # 🚀 Vercel 배포 가이드 (회사 동료들과 공유하기)
 
 이 문서대로 따라 하면 인터넷 주소(예: `https://fms-xxxx.vercel.app`)가 생기고,

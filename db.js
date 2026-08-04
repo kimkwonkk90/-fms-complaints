@@ -25,11 +25,19 @@
   var ANON = window.SUPABASE_ANON_KEY;
   var REST = BASE + '/rest/v1/';
 
-  // 공식 클라이언트 — 로그인/세션 관리(관리자 Auth) + Storage 업로드에 사용
+  // 공식 클라이언트 — 로그인/세션 관리(관리자 Auth) + 테이블 REST 에 사용
   var sb = window.supabase.createClient(BASE, ANON, {
     auth: { persistSession: true, autoRefreshToken: true }
   });
   window.sbClient = sb;
+
+  // Storage 전용 클라이언트 — self-hosted 인스턴스, 사진 업로드/조회에만 사용(auth/db 사용 안 함)
+  var sbStorage = null;
+  if (window.STORAGE_URL && window.STORAGE_ANON_KEY) {
+    sbStorage = window.supabase.createClient(window.STORAGE_URL, window.STORAGE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+  }
 
   // 세션이 있으면 사용자 토큰(관리자), 없으면 anon key(공개 사용자)
   function authHeaders() {
@@ -137,21 +145,26 @@
   }
 
   // ── 사진 업로드 헬퍼 ────────────────────────────────────────────────
-  // File 객체 배열 → Supabase Storage 업로드 → 공개 URL 배열 반환.
-  // 사용처: submit.html 의 폼 제출. 실패한 파일은 건너뛰고 경고를 남긴다.
+  // File 객체 배열 → self-hosted Storage 업로드 → 공개 URL 배열 반환.
+  // 사용처: submit.html 의 폼 제출, admin-detail.html 의 처리결과 사진.
+  // 실패한 파일은 건너뛰고 경고를 남긴다.
+  // 이 버킷은 다른 프로젝트와 공유하므로 'complaint-photos/' 로 경로를 구분한다.
   window.uploadPhotos = async function (files) {
-    var bucket = window.SUPABASE_PHOTO_BUCKET || 'complaint-photos';
+    // STORAGE_URL 미설정 시 기존 클라우드 Supabase 클라이언트/버킷으로 대체
+    var client = sbStorage || sb;
+    var bucket = sbStorage ? (window.STORAGE_BUCKET || 'storage') : (window.SUPABASE_PHOTO_BUCKET || 'complaint-photos');
+    var prefix = sbStorage ? 'complaint-photos/' : '';
     var urls = [];
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
       var ext = (file.name && file.name.split('.').pop()) || 'jpg';
       var rand = Math.random().toString(36).slice(2, 10);
-      var path = new Date().getFullYear() + '/' + now() + '-' + i + '-' + rand + '.' + ext;
-      var up = await sb.storage.from(bucket).upload(path, file, {
+      var path = prefix + new Date().getFullYear() + '/' + now() + '-' + i + '-' + rand + '.' + ext;
+      var up = await client.storage.from(bucket).upload(path, file, {
         cacheControl: '3600', upsert: false, contentType: file.type || 'image/jpeg'
       });
       if (up.error) { console.error('[db.js] 사진 업로드 실패:', up.error); continue; }
-      var pub = sb.storage.from(bucket).getPublicUrl(up.data.path);
+      var pub = client.storage.from(bucket).getPublicUrl(up.data.path);
       urls.push(pub.data.publicUrl);
     }
     return urls;

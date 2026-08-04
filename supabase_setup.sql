@@ -1,6 +1,12 @@
 -- =====================================================================
 -- 시설관리 하자/민원 시스템 — Supabase 스키마 & 보안 정책 & 사진 스토리지
 -- 사용법: Supabase 대시보드 > SQL Editor 에 전체 붙여넣고 [Run].
+--
+-- ※ 변경 사항: 사진 파일 저장소는 self-hosted Supabase Storage
+--   (storage-seegene.cloud)로 옮겼습니다. 이 파일의 6) 버킷/정책은
+--   더 이상 새 사진 업로드에는 쓰이지 않지만(과거 업로드 파일 호환을
+--   위해), DB/Auth 는 계속 이 클라우드 Supabase 를 그대로 사용합니다.
+--   self-hosted Storage 설정은 storage_selfhosted_setup.sql 참고.
 -- =====================================================================
 
 -- 1) 민원 테이블 ------------------------------------------------------
@@ -112,5 +118,15 @@ create or replace view public.public_complaints as
          location, floor, department, priority, status,
          photo_urls, result_photo_urls, result_note, assigned_to,
          completed_at, created_at, updated_at
-    from public.complaints;
+    from public.complaints
+   where deleted_at is null;
 grant select on public.public_complaints to anon, authenticated;
+
+-- =====================================================================
+-- 9) 소프트 삭제 컬럼 (deleted_at) — 2026-08-01
+--    admin-detail.html 의 삭제/복구 기능이 이 컬럼을 사용하는데, 실제로는
+--    이 컬럼이 생성된 적이 없어 삭제 시도 시 400 에러가 나고 있었음.
+--    epoch ms(bigint) — created_at/updated_at 과 동일한 형식.
+--    위 8) 공개 뷰도 deleted_at 이 있는 행은 제외하도록 함께 수정함.
+-- =====================================================================
+alter table public.complaints add column if not exists deleted_at bigint;
