@@ -600,12 +600,14 @@
     const totalDone = items.filter(i=>i.status==='completed').length;
     const rate = total > 0 ? Math.round(totalDone/total*100) : 0;
     const deleted = allItems.filter(i=>i.deleted_at).length;
+    // "전체 민원" 탭에는 완료 건을 제외한 진행 중인 민원만 노출한다 (완료는 "완료" 탭 전용).
+    const activeTotal = items.filter(i=>i.status!=='completed').length;
 
     document.getElementById('kpiTotal').textContent = total;
     document.getElementById('kpiNew').textContent = received;
     document.getElementById('kpiDone').textContent = doneMonth;
     document.getElementById('kpiRate').textContent = rate + '%';
-    document.getElementById('navTotal').textContent = total;
+    document.getElementById('navTotal').textContent = activeTotal;
     document.getElementById('navReceived').textContent = received;
     document.getElementById('navProgress').textContent = inProgress;
     document.getElementById('navDeleted').textContent = deleted;
@@ -668,7 +670,10 @@
     const pri = document.getElementById('priFilter').value;
     filtered = allItems.filter(i => {
       const matchKw = !kw || [i.ticket_number, i.title, i.submitter_name, i.assigned_to].filter(Boolean).some(v => String(v).toLowerCase().includes(kw));
-      const matchStatus = status === 'deleted' ? !!i.deleted_at : (!i.deleted_at && (!status || i.status===status));
+      // 완료 건은 "완료" 탭에서만 보이도록, 그 외 탭(전체 포함)에서는 제외한다.
+      const matchStatus = status === 'deleted' ? !!i.deleted_at
+        : status === 'completed' ? (!i.deleted_at && i.status === 'completed')
+        : (!i.deleted_at && i.status !== 'completed' && (!status || i.status===status));
       return matchKw && matchStatus && (!type || i.type===type) && (!pri || i.priority===pri);
     });
     currentPage = 1;
