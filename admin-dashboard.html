@@ -772,14 +772,23 @@
     } catch (e) { return []; }
   }
 
-  function getImageDims(blob) {
-    return new Promise((resolve) => {
-      const objUrl = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => { resolve({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(objUrl); };
-      img.onerror = () => { resolve(null); URL.revokeObjectURL(objUrl); };
-      img.src = objUrl;
-    });
+  // 사진 파일의 EXIF 방향 정보(회전/반전)를 실제 픽셀에 반영한 PNG Blob으로 반환.
+  // 그대로 원본 바이트를 엑셀에 넣으면 EXIF 방향이 무시되어 화면에 보던 것과 달리
+  // 회전되거나 뒤집힌 채로 삽입되므로, 캔버스에 다시 그려서 보이는 그대로 굽는다.
+  async function normalizeImageOrientation(blob) {
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+    } catch (e) {
+      bitmap = await createImageBitmap(blob);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+    if (bitmap.close) bitmap.close();
+    const normalizedBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    return { blob: normalizedBlob, w: canvas.width, h: canvas.height };
   }
 
   const EXCEL_THUMB = 80; // 셀에 넣을 사진 최대 가로/세로(px)
@@ -788,16 +797,15 @@
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error('http ' + res.status);
-      const blob = await res.blob();
-      const [arrBuf, dims] = await Promise.all([blob.arrayBuffer(), getImageDims(blob)]);
+      const rawBlob = await res.blob();
+      const { blob: normalizedBlob, w: naturalW, h: naturalH } = await normalizeImageOrientation(rawBlob);
+      const arrBuf = await normalizedBlob.arrayBuffer();
       let w = EXCEL_THUMB, h = EXCEL_THUMB;
-      if (dims && dims.w && dims.h) {
-        if (dims.w >= dims.h) { w = EXCEL_THUMB; h = Math.round(EXCEL_THUMB * dims.h / dims.w) || EXCEL_THUMB; }
-        else { h = EXCEL_THUMB; w = Math.round(EXCEL_THUMB * dims.w / dims.h) || EXCEL_THUMB; }
+      if (naturalW && naturalH) {
+        if (naturalW >= naturalH) { w = EXCEL_THUMB; h = Math.round(EXCEL_THUMB * naturalH / naturalW) || EXCEL_THUMB; }
+        else { h = EXCEL_THUMB; w = Math.round(EXCEL_THUMB * naturalW / naturalH) || EXCEL_THUMB; }
       }
-      let ext = (url.split('?')[0].split('.').pop() || '').toLowerCase();
-      if (ext !== 'png' && ext !== 'gif') ext = 'jpeg';
-      const imageId = workbook.addImage({ buffer: arrBuf, extension: ext });
+      const imageId = workbook.addImage({ buffer: arrBuf, extension: 'png' });
       sheet.addImage(imageId, {
         tl: { col: colNumber - 1 + 0.06, row: rowNumber - 1 + 0.06 },
         ext: { width: w, height: h }
