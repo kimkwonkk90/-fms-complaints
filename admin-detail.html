@@ -376,6 +376,12 @@
   let currentItem = null;
   let existingResultPhotos = [];
   let newResultFiles = [];
+  let existingOrigPhotos = [];
+  let newOrigFiles = [];
+
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 
   async function loadDetail() {
     try {
@@ -466,24 +472,88 @@
 
           <!-- INFO GRID -->
           <div class="info-grid">
-            <div class="info-item"><div class="info-label">접수자</div><div class="info-val">${item.submitter_name||'—'}</div></div>
-            <div class="info-item"><div class="info-label">연락처</div><div class="info-val">${item.submitter_contact||'—'}</div></div>
-            <div class="info-item"><div class="info-label">부서</div><div class="info-val">${item.department||'—'}${item.floor?' / '+item.floor:''}</div></div>
-            <div class="info-item"><div class="info-label">위치</div><div class="info-val">${item.location||'—'}</div></div>
             <div class="info-item"><div class="info-label">담당자</div><div class="info-val">${item.assigned_to||'<span style="color:#f59e0b;">미배정</span>'}</div></div>
             <div class="info-item"><div class="info-label">완료 일시</div><div class="info-val">${completedAt}</div></div>
           </div>
 
-          <!-- DESCRIPTION -->
+          <!-- SUBMISSION CONTENT -->
           <div class="detail-section">
             <div class="detail-section-title">📝 접수 내용</div>
-            <div class="desc-text">${item.description||'—'}</div>
-          </div>
-
-          <!-- PHOTOS -->
-          <div class="detail-section">
-            <div class="detail-section-title">📷 접수 사진</div>
-            ${getPhotos(item.photo_urls)}
+            <div class="tab-group" style="margin-bottom:14px;">
+              <button class="tab-btn active" id="tab-subpreview" onclick="switchSubTab('preview')">📄 현재 내용</button>
+              <button class="tab-btn" id="tab-subedit" onclick="switchSubTab('edit')">✏️ 내용 수정</button>
+            </div>
+            <div id="subPreview">
+              <div class="info-grid" style="margin-bottom:14px;">
+                <div class="info-item"><div class="info-label">접수자</div><div class="info-val">${item.submitter_name||'—'}</div></div>
+                <div class="info-item"><div class="info-label">연락처</div><div class="info-val">${item.submitter_contact||'—'}</div></div>
+                <div class="info-item"><div class="info-label">부서</div><div class="info-val">${item.department||'—'}</div></div>
+                <div class="info-item"><div class="info-label">위치</div><div class="info-val">${item.location||'—'}</div></div>
+              </div>
+              <div class="desc-text" style="margin-bottom:14px;">${item.description||'—'}</div>
+              ${getPhotos(item.photo_urls)}
+            </div>
+            <div id="subEdit" style="display:none;">
+              <div class="result-form">
+                <div class="form-group">
+                  <label class="form-label">제목</label>
+                  <input type="text" id="editTitle" class="form-control" value="${escAttr(item.title)}">
+                </div>
+                <div class="form-row" style="display:flex; gap:10px;">
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">유형</label>
+                    <select id="editType" class="form-control">
+                      <option value="defect" ${item.type==='defect'?'selected':''}>하자 신고</option>
+                      <option value="complaint" ${item.type==='complaint'?'selected':''}>민원 접수</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">분류</label>
+                    <select id="editCategory" class="form-control">
+                      <option value="construction" ${item.category==='construction'?'selected':''}>건축·인테리어</option>
+                      <option value="equipment" ${item.category==='equipment'?'selected':''}>설비·공조</option>
+                      <option value="electric" ${item.category==='electric'?'selected':''}>전기·통신</option>
+                      <option value="cleaning" ${item.category==='cleaning'?'selected':''}>환경·청소</option>
+                      <option value="other" ${item.category==='other'?'selected':''}>기타</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row" style="display:flex; gap:10px;">
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">접수자명</label>
+                    <input type="text" id="editSubmitterName" class="form-control" value="${escAttr(item.submitter_name)}">
+                  </div>
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">연락처</label>
+                    <input type="text" id="editSubmitterContact" class="form-control" value="${escAttr(item.submitter_contact)}">
+                  </div>
+                </div>
+                <div class="form-row" style="display:flex; gap:10px;">
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">부서</label>
+                    <input type="text" id="editDepartment" class="form-control" value="${escAttr(item.department)}">
+                  </div>
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">위치</label>
+                    <input type="text" id="editLocation" class="form-control" value="${escAttr(item.location)}" placeholder="예: 3층 · 305호">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">접수 내용</label>
+                  <textarea id="editDescription" class="form-control" rows="4">${item.description||''}</textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">접수 사진</label>
+                  <div class="upload-area" id="origUploadArea" onclick="document.getElementById('origFileInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">클릭하거나 파일을 드래그하세요</div>
+                    <div class="upload-hint">JPG, PNG, GIF · 최대 10MB</div>
+                  </div>
+                  <input type="file" id="origFileInput" accept="image/*" multiple style="display:none;" onchange="handleOrigFiles(this.files)">
+                  <div class="preview-grid" id="origPreviewGrid"></div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- RESULT -->
@@ -625,6 +695,20 @@
     resultUploadArea.addEventListener('dragover', e => { e.preventDefault(); resultUploadArea.classList.add('over'); });
     resultUploadArea.addEventListener('dragleave', () => resultUploadArea.classList.remove('over'));
     resultUploadArea.addEventListener('drop', e => { e.preventDefault(); resultUploadArea.classList.remove('over'); handleResultFiles(e.dataTransfer.files); });
+
+    existingOrigPhotos = (() => {
+      try {
+        const raw = item.photo_urls;
+        const arr = typeof raw === 'string' ? JSON.parse(raw) : (raw || []);
+        return Array.isArray(arr) ? arr : [];
+      } catch(e) { return []; }
+    })();
+    newOrigFiles = [];
+    renderOrigPreviews();
+    const origUploadArea = document.getElementById('origUploadArea');
+    origUploadArea.addEventListener('dragover', e => { e.preventDefault(); origUploadArea.classList.add('over'); });
+    origUploadArea.addEventListener('dragleave', () => origUploadArea.classList.remove('over'));
+    origUploadArea.addEventListener('drop', e => { e.preventDefault(); origUploadArea.classList.remove('over'); handleOrigFiles(e.dataTransfer.files); });
   }
 
   function handleResultFiles(files) {
@@ -662,11 +746,53 @@
   function removeExistingResultPhoto(idx) { existingResultPhotos.splice(idx, 1); renderResultPreviews(); }
   function removeNewResultFile(idx) { newResultFiles.splice(idx, 1); renderResultPreviews(); }
 
+  function handleOrigFiles(files) {
+    const MAX = 5;
+    const remaining = MAX - existingOrigPhotos.length - newOrigFiles.length;
+    Array.from(files).slice(0, Math.max(0, remaining)).forEach(f => {
+      if (!f.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        newOrigFiles.push({ file: f, url: ev.target.result });
+        renderOrigPreviews();
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function renderOrigPreviews() {
+    const grid = document.getElementById('origPreviewGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    existingOrigPhotos.forEach((url, idx) => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="${url}" alt="접수 사진"><button class="preview-remove" onclick="removeExistingOrigPhoto(${idx})">✕</button>`;
+      grid.appendChild(div);
+    });
+    newOrigFiles.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="${item.url}" alt="미리보기"><button class="preview-remove" onclick="removeNewOrigFile(${idx})">✕</button>`;
+      grid.appendChild(div);
+    });
+  }
+
+  function removeExistingOrigPhoto(idx) { existingOrigPhotos.splice(idx, 1); renderOrigPreviews(); }
+  function removeNewOrigFile(idx) { newOrigFiles.splice(idx, 1); renderOrigPreviews(); }
+
   function switchTab(tab) {
     document.getElementById('tab-preview').classList.toggle('active', tab==='preview');
     document.getElementById('tab-edit').classList.toggle('active', tab==='edit');
     document.getElementById('resultPreview').style.display = tab==='preview' ? '' : 'none';
     document.getElementById('resultEdit').style.display = tab==='edit' ? '' : 'none';
+  }
+
+  function switchSubTab(tab) {
+    document.getElementById('tab-subpreview').classList.toggle('active', tab==='preview');
+    document.getElementById('tab-subedit').classList.toggle('active', tab==='edit');
+    document.getElementById('subPreview').style.display = tab==='preview' ? '' : 'none';
+    document.getElementById('subEdit').style.display = tab==='edit' ? '' : 'none';
   }
 
   let currentStatus = '';
@@ -696,9 +822,23 @@
     const completedAtVal = completedAtEl ? completedAtEl.value : '';
     const adminMemo = adminMemoEl ? adminMemoEl.value.trim() : '';
 
+    const title = document.getElementById('editTitle').value.trim();
+    const type = document.getElementById('editType').value;
+    const category = document.getElementById('editCategory').value;
+    const submitterName = document.getElementById('editSubmitterName').value.trim();
+    const submitterContact = document.getElementById('editSubmitterContact').value.trim();
+    const department = document.getElementById('editDepartment').value.trim();
+    const location = document.getElementById('editLocation').value.trim();
+    const description = document.getElementById('editDescription').value.trim();
+
     if (status === 'completed' && !resultNote) {
       showToast('⚠️ 주의', '처리 완료 시 처리 결과 내용을 입력해 주세요.', 'error');
       switchTab('edit');
+      return;
+    }
+    if (!title || !description) {
+      showToast('⚠️ 주의', '제목과 접수 내용은 비워둘 수 없습니다.', 'error');
+      switchSubTab('edit');
       return;
     }
 
@@ -716,7 +856,23 @@
       showToast('⚠️ 사진 업로드 실패', '사진 없이 나머지 내용만 저장합니다.', 'warning');
     }
 
-    const patch = { status, assigned_to: assignedTo, priority, result_photo_urls: resultPhotoUrls };
+    let origPhotoUrls = existingOrigPhotos;
+    try {
+      if (newOrigFiles.length && window.uploadPhotos) {
+        const uploaded = await window.uploadPhotos(newOrigFiles.map(f => f.file));
+        origPhotoUrls = existingOrigPhotos.concat(uploaded);
+      }
+    } catch (err) {
+      console.error('접수 사진 업로드 실패:', err);
+      showToast('⚠️ 사진 업로드 실패', '사진 없이 나머지 내용만 저장합니다.', 'warning');
+    }
+
+    const patch = {
+      status, assigned_to: assignedTo, priority, result_photo_urls: resultPhotoUrls,
+      title, type, category, description, photo_urls: origPhotoUrls,
+      submitter_name: submitterName, submitter_contact: submitterContact,
+      department, location
+    };
     if (progressNote) patch.progress_note = progressNote;
     if (resultNote) patch.result_note = resultNote;
     if (adminMemo) patch.admin_memo = adminMemo;
