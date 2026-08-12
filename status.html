@@ -165,6 +165,23 @@
     .filter-btn-reset { background: #f1f5f9; color: #475569; }
     .filter-btn-reset:hover { background: #e2e8f0; }
 
+    /* MONTH NAV */
+    .month-nav {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+      padding: 14px 20px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .month-nav-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .month-nav-all {
+      padding: 8px 15px; border-radius: 100px; border: 1.5px solid #e2e8f0;
+      background: #fff; color: #475569; font-size: 12.5px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
+    }
+    .month-nav-all:hover { border-color: #16a34a; color: #15803d; background: #f0fdf4; }
+    .month-nav-all.active { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .month-nav-count { font-size: 12px; color: #94a3b8; font-weight: 600; white-space: nowrap; }
+
     /* COMPLAINT CARDS */
     .complaint-grid {
       display: grid; grid-template-columns: 1fr;
@@ -458,6 +475,16 @@
 
 <!-- CONTENT -->
 <div class="content-wrap">
+  <!-- MONTH NAV -->
+  <div class="month-nav">
+    <div class="month-nav-left">
+      <select class="filter-select" id="yearSelect" onchange="onYearMonthChange()"></select>
+      <select class="filter-select" id="monthSelect" onchange="onYearMonthChange()"></select>
+      <button class="month-nav-all" id="allBtn" onclick="goAll()">전체보기</button>
+    </div>
+    <div class="month-nav-count" id="monthCount"></div>
+  </div>
+
   <!-- FILTER BAR -->
   <div class="filter-bar">
     <div class="filter-search">
@@ -574,6 +601,12 @@
   let activeStatus = '';
   let activePriority = '';
 
+  // 월별 보기 상태 (메인페이지 통계는 전체 누적 기준이므로, 해당 진입 시엔 전체보기로 시작)
+  const TODAY = new Date();
+  let viewYear = TODAY.getFullYear();
+  let viewMonth = TODAY.getMonth();
+  let viewMode = 'month'; // 'month' | 'all'
+
   // URL 파라미터로 초기 필터 설정 (메인페이지 통계 카드 클릭 진입)
   (function applyUrlFilter() {
     const urlParams = new URLSearchParams(location.search);
@@ -581,6 +614,7 @@
     activePriority = urlParams.get('priority') || '';
     if (status) {
       activeStatus = status;
+      viewMode = 'all';
       document.getElementById('filterStatus').value = status;
       const map = { received:'sumReceived', in_progress:'sumProgress', completed:'sumCompleted' };
       if (map[status]) {
@@ -589,6 +623,44 @@
       }
     }
   })();
+
+  (function initYearMonthSelects() {
+    const years = [2026, 2027, 2028, 2029, 2030];
+    const yearSelect = document.getElementById('yearSelect');
+    yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}년</option>`).join('');
+    yearSelect.value = viewYear;
+
+    const monthSelect = document.getElementById('monthSelect');
+    monthSelect.innerHTML = Array.from({length:12}, (_,i) => `<option value="${i+1}">${i+1}월</option>`).join('');
+    monthSelect.value = viewMonth + 1;
+
+    document.getElementById('allBtn').classList.toggle('active', viewMode === 'all');
+  })();
+
+  function onYearMonthChange() {
+    viewYear = +document.getElementById('yearSelect').value;
+    viewMonth = +document.getElementById('monthSelect').value - 1;
+    viewMode = 'month';
+    document.getElementById('allBtn').classList.remove('active');
+    updateSummary();
+    applyFilter();
+  }
+
+  function goAll() {
+    viewMode = 'all';
+    document.getElementById('allBtn').classList.add('active');
+    updateSummary();
+    applyFilter();
+  }
+
+  function getScopedItems() {
+    if (viewMode === 'all') return allItems;
+    return allItems.filter(i => {
+      if (!i.created_at) return false;
+      const dt = new Date(i.created_at);
+      return dt.getFullYear() === viewYear && dt.getMonth() === viewMonth;
+    });
+  }
 
   async function loadData() {
     try {
@@ -608,10 +680,12 @@
   }
 
   function updateSummary() {
-    document.getElementById('cntAll').textContent = allItems.length;
-    document.getElementById('cntReceived').textContent = allItems.filter(i=>i.status==='received').length;
-    document.getElementById('cntProgress').textContent = allItems.filter(i=>i.status==='in_progress').length;
-    document.getElementById('cntCompleted').textContent = allItems.filter(i=>i.status==='completed').length;
+    const scoped = getScopedItems();
+    document.getElementById('cntAll').textContent = scoped.length;
+    document.getElementById('cntReceived').textContent = scoped.filter(i=>i.status==='received').length;
+    document.getElementById('cntProgress').textContent = scoped.filter(i=>i.status==='in_progress').length;
+    document.getElementById('cntCompleted').textContent = scoped.filter(i=>i.status==='completed').length;
+    document.getElementById('monthCount').textContent = viewMode === 'all' ? `전체 ${scoped.length}건` : `이 달 ${scoped.length}건`;
   }
 
   function filterByStatus(status) {
@@ -623,6 +697,8 @@
     applyFilter();
   }
 
+  let scopeEmpty = false;
+
   function applyFilter() {
     const keyword = document.getElementById('filterKeyword').value.toLowerCase().trim();
     const status = document.getElementById('filterStatus').value;
@@ -630,7 +706,10 @@
     const cat = document.getElementById('filterCat').value;
     const floor = document.getElementById('filterFloor').value;
 
-    filtered = allItems.filter(item => {
+    const scoped = getScopedItems();
+    scopeEmpty = scoped.length === 0;
+
+    filtered = scoped.filter(item => {
       const matchKw = !keyword || [item.ticket_number, item.title, item.submitter_name, item.location, item.floor, item.department]
         .filter(Boolean).some(v => String(v).toLowerCase().includes(keyword));
       const matchStatus = !status || item.status === status;
@@ -663,11 +742,15 @@
     const page = filtered.slice(start, start + PER_PAGE);
 
     if (filtered.length === 0) {
-      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">검색 결과가 없습니다</div><div class="empty-desc">다른 검색어나 필터를 시도해 보세요.</div></div>`;
+      const msg = (scopeEmpty && viewMode === 'month')
+        ? { icon:'🗓️', title:'이 달에 접수된 민원이 없습니다', desc:'다른 달을 선택하거나 전체보기를 눌러보세요.' }
+        : { icon:'🔍', title:'검색 결과가 없습니다', desc:'다른 검색어나 필터를 시도해 보세요.' };
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">${msg.icon}</div><div class="empty-title">${msg.title}</div><div class="empty-desc">${msg.desc}</div></div>`;
       return;
     }
 
-    const total_info = `<div style="font-size:13px; color:#64748b; font-weight:600; margin-bottom:14px;">총 <strong style="color:#1d4ed8;">${filtered.length}</strong>건의 민원이 조회되었습니다.</div>`;
+    const scopeLabel = viewMode === 'all' ? '전체' : `${viewYear}년 ${viewMonth+1}월`;
+    const total_info = `<div style="font-size:13px; color:#64748b; font-weight:600; margin-bottom:14px;">${scopeLabel} 접수 민원 중 <strong style="color:#1d4ed8;">${filtered.length}</strong>건이 조회되었습니다.</div>`;
 
     const cards = page.map(item => {
       const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '—';
