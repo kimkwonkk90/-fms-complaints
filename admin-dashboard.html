@@ -413,19 +413,19 @@
       <div class="kpi-grid">
         <div class="kpi-card" style="--kpi-color:#3b82f6; --kpi-bg:#eff6ff;">
           <div class="kpi-top">
-            <div class="kpi-icon">📋</div>
-            <span class="kpi-trend up" id="kpiTotalTrend">전체</span>
-          </div>
-          <div class="kpi-val" id="kpiTotal">—</div>
-          <div class="kpi-label">전체 접수</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#f59e0b; --kpi-bg:#fffbeb;">
-          <div class="kpi-top">
             <div class="kpi-icon">📥</div>
             <span class="kpi-trend warn" id="kpiNewTrend">대기</span>
           </div>
           <div class="kpi-val" id="kpiNew">—</div>
-          <div class="kpi-label">신규 접수 (미배정)</div>
+          <div class="kpi-label">신규 접수</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#f59e0b; --kpi-bg:#fffbeb;">
+          <div class="kpi-top">
+            <div class="kpi-icon">⚙️</div>
+            <span class="kpi-trend up" id="kpiProgressTrend">중</span>
+          </div>
+          <div class="kpi-val" id="kpiProgress">—</div>
+          <div class="kpi-label">처리 중</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#10b981; --kpi-bg:#f0fdf4;">
           <div class="kpi-top">
@@ -433,15 +433,15 @@
             <span class="kpi-trend up" id="kpiDoneTrend">이달</span>
           </div>
           <div class="kpi-val" id="kpiDone">—</div>
-          <div class="kpi-label">이달 완료</div>
+          <div class="kpi-label">처리 완료</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#8b5cf6; --kpi-bg:#f5f3ff;">
           <div class="kpi-top">
-            <div class="kpi-icon">⚡</div>
-            <span class="kpi-trend up" id="kpiRateTrend">율</span>
+            <div class="kpi-icon">📊</div>
+            <span class="kpi-trend up" id="kpiTotalTrend">전체</span>
           </div>
-          <div class="kpi-val" id="kpiRate">—</div>
-          <div class="kpi-label">완료율</div>
+          <div class="kpi-val" id="kpiTotal">—</div>
+          <div class="kpi-label">총 접수</div>
         </div>
       </div>
 
@@ -598,16 +598,14 @@
       if(i.status!=='completed') return false;
       const d=new Date(i.updated_at); return d.getFullYear()===y && d.getMonth()===m;
     }).length;
-    const totalDone = items.filter(i=>i.status==='completed').length;
-    const rate = total > 0 ? Math.round(totalDone/total*100) : 0;
     const deleted = allItems.filter(i=>i.deleted_at).length;
     // "전체 민원" 탭에는 완료 건을 제외한 진행 중인 민원만 노출한다 (완료는 "완료" 탭 전용).
     const activeTotal = items.filter(i=>i.status!=='completed').length;
 
     document.getElementById('kpiTotal').textContent = total;
     document.getElementById('kpiNew').textContent = received;
+    document.getElementById('kpiProgress').textContent = inProgress;
     document.getElementById('kpiDone').textContent = doneMonth;
-    document.getElementById('kpiRate').textContent = rate + '%';
     document.getElementById('navTotal').textContent = activeTotal;
     document.getElementById('navReceived').textContent = received;
     document.getElementById('navProgress').textContent = inProgress;
