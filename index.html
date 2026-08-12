@@ -936,15 +936,15 @@
             </div>
             <span class="stat-item-val" id="cardCompleted">—</span>
           </a>
-          <a class="stat-item" href="status.html?priority=urgent">
+          <a class="stat-item" href="status.html?view=all">
             <div class="stat-item-left">
-              <div class="stat-item-icon purple">🚨</div>
+              <div class="stat-item-icon purple">📊</div>
               <div>
-                <div class="stat-item-label">긴급 처리</div>
-                <div class="stat-item-sub">즉시 대응 필요</div>
+                <div class="stat-item-label">총 접수</div>
+                <div class="stat-item-sub">누계</div>
               </div>
             </div>
-            <span class="stat-item-val" id="cardUrgent">—</span>
+            <span class="stat-item-val" id="cardTotal">—</span>
           </a>
         </div>
         <div class="hero-card-footer">
@@ -1170,7 +1170,6 @@
       const total = items.length;
       const received = items.filter(i => i.status === 'received').length;
       const inProgress = items.filter(i => i.status === 'in_progress').length;
-      const urgent = items.filter(i => i.priority === 'urgent').length;
       const completed = items.filter(i => {
         if (i.status !== 'completed') return false;
         const d = new Date(i.updated_at);
@@ -1189,7 +1188,7 @@
       animateCount(document.getElementById('cardReceived'), received);
       animateCount(document.getElementById('cardInProgress'), inProgress);
       animateCount(document.getElementById('cardCompleted'), completed);
-      animateCount(document.getElementById('cardUrgent'), urgent);
+      animateCount(document.getElementById('cardTotal'), total);
 
       // Stats section
       animateCount(document.getElementById('s1'), total);
@@ -1199,7 +1198,7 @@
 
     } catch(e) {
       console.error(e);
-      ['statTotal','statInProgress','statCompleted','cardReceived','cardInProgress','cardCompleted','cardUrgent','s1','s2','s3'].forEach(id => {
+      ['statTotal','statInProgress','statCompleted','cardReceived','cardInProgress','cardCompleted','cardTotal','s1','s2','s3'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '0';
       });

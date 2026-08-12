@@ -611,6 +611,7 @@
   (function applyUrlFilter() {
     const urlParams = new URLSearchParams(location.search);
     const status = urlParams.get('status') || '';
+    const view = urlParams.get('view') || '';
     activePriority = urlParams.get('priority') || '';
     if (status) {
       activeStatus = status;
@@ -621,6 +622,8 @@
         document.querySelectorAll('.sum-card').forEach(c => c.classList.remove('active'));
         document.getElementById(map[status])?.classList.add('active');
       }
+    } else if (view === 'all') {
+      viewMode = 'all';
     }
   })();
 
