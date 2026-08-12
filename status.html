@@ -757,13 +757,10 @@
     const scopeLabel = viewMode === 'all' ? '전체' : `${viewYear}년 ${viewMonth+1}월`;
     const total_info = `<div style="font-size:13px; color:#64748b; font-weight:600; margin-bottom:14px;">${scopeLabel} 접수 민원 중 <strong style="color:#1d4ed8;">${filtered.length}</strong>건이 조회되었습니다.</div>`;
 
-    const BADGE_ACCENT = { 'badge-received':'#15803d', 'badge-in_progress':'#92400e', 'badge-status-red':'#dc2626', 'badge-rejected':'#dc2626' };
-
     const cards = page.map(item => {
       const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '—';
       const statusCls = item.status || 'received';
       const statusBadgeCls = item.status === 'completed' ? 'badge-status-red' : (STATUS_BADGE[item.status] || 'badge-received');
-      const statusAccent = BADGE_ACCENT[statusBadgeCls] || '#cbd5e1';
       return `
         <div class="complaint-card ${statusCls}" onclick="openDetail('${item.id}')">
           <div class="card-num">
@@ -786,7 +783,7 @@
           <div class="card-right">
             <span class="badge card-status-badge ${statusBadgeCls}">${STATUS_LABEL[item.status]||'접수'}</span>
             <div class="card-date">${date}</div>
-            <div class="card-arrow" style="color:${statusAccent};"><i class="fas fa-chevron-right"></i></div>
+            <div class="card-arrow"><i class="fas fa-chevron-right"></i></div>
           </div>
         </div>`;
     }).join('');
