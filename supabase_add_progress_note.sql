@@ -13,8 +13,8 @@ alter table public.complaints add column if not exists progress_note text;
 create or replace view public.public_complaints as
   select id, ticket_number, type, category, title, description,
          location, floor, department, priority, status,
-         photo_urls, result_photo_urls, result_note, progress_note, assigned_to,
-         completed_at, created_at, updated_at
+         photo_urls, result_photo_urls, result_note, assigned_to,
+         completed_at, created_at, updated_at, progress_note
     from public.complaints
    where deleted_at is null;
 grant select on public.public_complaints to anon, authenticated;
