@@ -429,7 +429,10 @@
     } else if (item.status === 'in_progress') {
       resultPreviewContent = `<div class="result-preview in_progress">
         <div class="result-preview-title">⚙️ 처리 중</div>
-        <div style="font-size:13px;color:#92400e;">담당자 <strong>${item.assigned_to||'배정 중'}</strong>이 처리하고 있습니다.</div>
+        <div style="font-size:13px;color:#92400e;line-height:1.65;">
+          담당자 <strong>${item.assigned_to||'배정 중'}</strong>이 처리하고 있습니다.
+          ${item.progress_note ? `<br><br>${item.progress_note}` : ''}
+        </div>
       </div>`;
     } else {
       resultPreviewContent = `<div class="result-preview received">
@@ -493,6 +496,10 @@
             <div id="resultPreview">${resultPreviewContent}</div>
             <div id="resultEdit" style="display:none;">
               <div class="result-form">
+                <div class="form-group">
+                  <label class="form-label">진행 상황 메모 (처리 중 안내)</label>
+                  <textarea id="progressNote" class="form-control" rows="3" placeholder="처리 중 진행 상황을 입력하세요 (예: 부품 발주 완료, 내일 방문 예정 등)...">${item.progress_note||''}</textarea>
+                </div>
                 <div class="form-group">
                   <label class="form-label">처리 결과 내용</label>
                   <textarea id="resultNote" class="form-control" rows="4" placeholder="처리 결과를 상세히 입력하세요...">${item.result_note||''}</textarea>
@@ -680,9 +687,11 @@
     const status = document.getElementById('selectedStatus').value;
     const assignedTo = document.getElementById('assignedTo').value;
     const priority = document.getElementById('prioritySelect').value;
+    const progressNoteEl = document.getElementById('progressNote');
     const resultNoteEl = document.getElementById('resultNote');
     const completedAtEl = document.getElementById('completedAt');
     const adminMemoEl = document.getElementById('adminMemo');
+    const progressNote = progressNoteEl ? progressNoteEl.value.trim() : '';
     const resultNote = resultNoteEl ? resultNoteEl.value.trim() : '';
     const completedAtVal = completedAtEl ? completedAtEl.value : '';
     const adminMemo = adminMemoEl ? adminMemoEl.value.trim() : '';
@@ -708,6 +717,7 @@
     }
 
     const patch = { status, assigned_to: assignedTo, priority, result_photo_urls: resultPhotoUrls };
+    if (progressNote) patch.progress_note = progressNote;
     if (resultNote) patch.result_note = resultNote;
     if (adminMemo) patch.admin_memo = adminMemo;
     if (status === 'completed') {
