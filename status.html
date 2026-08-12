@@ -484,6 +484,31 @@
       <option value="cleaning">환경·청소</option>
       <option value="other">기타</option>
     </select>
+    <select class="filter-select" id="filterFloor" onchange="applyFilter()">
+      <option value="">전체 층</option>
+      <option value="지하 5층">지하 5층</option>
+      <option value="지하 4층">지하 4층</option>
+      <option value="지하 3층">지하 3층</option>
+      <option value="지하 2층">지하 2층</option>
+      <option value="지하 1층">지하 1층</option>
+      <option value="1층">1층</option>
+      <option value="2층">2층</option>
+      <option value="3층">3층</option>
+      <option value="4층">4층</option>
+      <option value="5층">5층</option>
+      <option value="6층">6층</option>
+      <option value="7층">7층</option>
+      <option value="8층">8층</option>
+      <option value="9층">9층</option>
+      <option value="10층">10층</option>
+      <option value="11층">11층</option>
+      <option value="13층">13층</option>
+      <option value="15층">15층</option>
+      <option value="16층">16층</option>
+      <option value="17층">17층</option>
+      <option value="18층">18층</option>
+      <option value="19층">19층</option>
+    </select>
     <button class="filter-btn filter-btn-reset" onclick="resetFilter()"><i class="fas fa-redo"></i> 초기화</button>
   </div>
 
@@ -602,6 +627,7 @@
     const status = document.getElementById('filterStatus').value;
     const type = document.getElementById('filterType').value;
     const cat = document.getElementById('filterCat').value;
+    const floor = document.getElementById('filterFloor').value;
 
     filtered = allItems.filter(item => {
       const matchKw = !keyword || [item.ticket_number, item.title, item.submitter_name, item.location, item.floor, item.department]
@@ -609,8 +635,9 @@
       const matchStatus = !status || item.status === status;
       const matchType = !type || item.type === type;
       const matchCat = !cat || item.category === cat;
+      const matchFloor = !floor || String(item.location || '').startsWith(floor);
       const matchPriority = !activePriority || item.priority === activePriority;
-      return matchKw && matchStatus && matchType && matchCat && matchPriority;
+      return matchKw && matchStatus && matchType && matchCat && matchFloor && matchPriority;
     });
 
     currentPage = 1;
@@ -623,6 +650,7 @@
     document.getElementById('filterStatus').value = '';
     document.getElementById('filterType').value = '';
     document.getElementById('filterCat').value = '';
+    document.getElementById('filterFloor').value = '';
     document.getElementById('heroSearch').value = '';
     activePriority = '';
     filterByStatus('');
