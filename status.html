@@ -851,7 +851,7 @@
     } else if (item.status === 'in_progress') {
       resultBox = `<div class="result-box in-progress">
         <div class="result-box-title">🔧 처리 중</div>
-        <div class="result-text">담당자: <strong>${item.assigned_to||'배정 중'}</strong><br>현재 처리 중입니다. 완료 시 안내해 드리겠습니다.
+        <div class="result-text"><strong>${item.assigned_to||'배정 중'}</strong>이 현재 처리 중입니다. 완료 시 안내해 드리겠습니다.
           ${item.progress_note ? `<br><br><strong style="color:#dc2626;">진행 상황:</strong><br><span style="color:#dc2626;">${item.progress_note}</span>` : ''}
         </div>
       </div>`;
