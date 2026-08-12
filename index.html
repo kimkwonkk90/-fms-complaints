@@ -881,8 +881,8 @@
         </div>
         <div class="hero-stats-bar">
           <div class="hero-stat">
-            <span class="hero-stat-val" id="statTotal">—</span>
-            <span class="hero-stat-lbl">총 접수</span>
+            <span class="hero-stat-val" id="statReceived">—</span>
+            <span class="hero-stat-lbl">신규 접수</span>
           </div>
           <div class="hero-stat">
             <span class="hero-stat-val" id="statInProgress">—</span>
@@ -891,6 +891,10 @@
           <div class="hero-stat">
             <span class="hero-stat-val" id="statCompleted">—</span>
             <span class="hero-stat-lbl">처리 완료</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-val" id="statTotal">—</span>
+            <span class="hero-stat-lbl">총 접수</span>
           </div>
           <div class="hero-stat">
             <span class="hero-stat-val" id="statRate">—</span>
@@ -1179,9 +1183,10 @@
       const rate = total > 0 ? Math.round(totalDone / total * 100) : 0;
 
       // Hero stats
-      animateCount(document.getElementById('statTotal'), total);
+      animateCount(document.getElementById('statReceived'), received);
       animateCount(document.getElementById('statInProgress'), inProgress);
       animateCount(document.getElementById('statCompleted'), completed);
+      animateCount(document.getElementById('statTotal'), total);
       document.getElementById('statRate').textContent = rate + '%';
 
       // Hero card
@@ -1198,7 +1203,7 @@
 
     } catch(e) {
       console.error(e);
-      ['statTotal','statInProgress','statCompleted','cardReceived','cardInProgress','cardCompleted','cardTotal','s1','s2','s3'].forEach(id => {
+      ['statReceived','statTotal','statInProgress','statCompleted','cardReceived','cardInProgress','cardCompleted','cardTotal','s1','s2','s3'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '0';
       });
