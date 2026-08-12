@@ -237,6 +237,8 @@
     .card-meta span { display: flex; align-items: center; gap: 4px; }
 
     .card-right { text-align: right; flex-shrink: 0; }
+    .card-status-badge { font-size: 12.5px; padding: 5px 12px; margin-bottom: 10px; }
+    .badge-status-red { background: #fef2f2; color: #dc2626; }
     .card-date { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
     .card-arrow { font-size: 16px; color: #cbd5e1; }
 
@@ -452,7 +454,7 @@
     <div class="sum-card" style="--color:#3b82f6; --icon-bg:#eff6ff;" onclick="filterByStatus('received')" id="sumReceived">
       <div class="sum-icon">📥</div>
       <div>
-        <div class="sum-label">접수 완료</div>
+        <div class="sum-label">신규 접수</div>
         <div class="sum-val" id="cntReceived">—</div>
       </div>
     </div>
@@ -493,7 +495,7 @@
     </div>
     <select class="filter-select" id="filterStatus" onchange="applyFilter()">
       <option value="">전체 상태</option>
-      <option value="received">접수 완료</option>
+      <option value="received">신규 접수</option>
       <option value="in_progress">처리 중</option>
       <option value="completed">처리 완료</option>
       <option value="rejected">반려</option>
@@ -586,7 +588,7 @@
   }
 
   // 상태 라벨
-  const STATUS_LABEL = { received:'접수 완료', in_progress:'처리 중', completed:'처리 완료', rejected:'반려' };
+  const STATUS_LABEL = { received:'신규 접수', in_progress:'처리 중', completed:'처리 완료', rejected:'반려' };
   const STATUS_BADGE = { received:'badge-received', in_progress:'badge-in_progress', completed:'badge-completed', rejected:'badge-rejected' };
   const TYPE_LABEL = { defect:'하자 신고', complaint:'민원 접수' };
   const CAT_LABEL = { construction:'건축·인테리어', equipment:'설비·공조', electric:'전기·통신', cleaning:'환경·청소', other:'기타' };
@@ -766,7 +768,6 @@
           </div>
           <div class="card-main">
             <div class="card-badges">
-              <span class="badge ${STATUS_BADGE[item.status]||'badge-received'}">${STATUS_LABEL[item.status]||'접수'}</span>
               <span class="badge ${item.type==='defect'?'badge-defect':'badge-complaint'}">${TYPE_LABEL[item.type]||item.type||'—'}</span>
               <span class="badge">${CAT_LABEL[item.category]||item.category||'—'}</span>
               <span class="badge ${PRI_BADGE[item.priority]||''}">${PRI_ICON[item.priority]||''} ${PRI_LABEL[item.priority]||item.priority||'—'}</span>
@@ -779,6 +780,7 @@
             </div>
           </div>
           <div class="card-right">
+            <span class="badge card-status-badge ${item.status==='completed' ? 'badge-status-red' : (STATUS_BADGE[item.status]||'badge-received')}">${STATUS_LABEL[item.status]||'접수'}</span>
             <div class="card-date">${date}</div>
             <div class="card-arrow"><i class="fas fa-chevron-right"></i></div>
           </div>
@@ -827,7 +829,7 @@
     // Progress
     const statuses = ['received','in_progress','completed'];
     const curIdx = item.status === 'rejected' ? -1 : statuses.indexOf(item.status);
-    const progLabels = ['접수 완료','처리 중','처리 완료'];
+    const progLabels = ['신규 접수','처리 중','처리 완료'];
     const progIcons = ['📥','⚙️','✅'];
     const progSteps = statuses.map((s,i) => {
       const cls = item.status==='rejected' ? '' : (i < curIdx ? 'done' : (i === curIdx ? 'current' : ''));
