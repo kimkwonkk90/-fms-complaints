@@ -1165,22 +1165,13 @@
     try {
       const res = await fetch('tables/public_complaints?limit=1000');
       const data = await res.json();
-      const items = data.data || [];
-
-      const now = new Date();
-      const month = now.getMonth();
-      const year = now.getFullYear();
+      const items = (data.data || []).filter(i => !i.deleted_at);
 
       const total = items.length;
       const received = items.filter(i => i.status === 'received').length;
       const inProgress = items.filter(i => i.status === 'in_progress').length;
-      const completed = items.filter(i => {
-        if (i.status !== 'completed') return false;
-        const d = new Date(i.updated_at);
-        return d.getFullYear() === year && d.getMonth() === month;
-      }).length;
-      const totalDone = items.filter(i => i.status === 'completed').length;
-      const rate = total > 0 ? Math.round(totalDone / total * 100) : 0;
+      const completed = items.filter(i => i.status === 'completed').length;
+      const rate = total > 0 ? Math.round(completed / total * 100) : 0;
 
       // Hero stats
       animateCount(document.getElementById('statReceived'), received);
