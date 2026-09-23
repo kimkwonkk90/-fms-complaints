@@ -1165,7 +1165,7 @@
     try {
       const res = await fetch('tables/public_complaints?limit=1000');
       const data = await res.json();
-      const items = (data.data || []).filter(i => !i.deleted_at);
+      const items = data.data || [];
 
       const total = items.length;
       const received = items.filter(i => i.status === 'received').length;
