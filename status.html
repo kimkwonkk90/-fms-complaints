@@ -895,7 +895,7 @@
     } else if (item.status === 'rejected') {
       resultBox = `<div class="result-box rejected">
         <div class="result-box-title">🚫 반려 처리</div>
-        <div class="result-text">${item.admin_memo || item.result_note || '반려 처리되었습니다. 자세한 사항은 시설관리실에 문의하세요.'}</div>
+        <div class="result-text" style="white-space:pre-wrap;">${item.admin_memo || item.result_note || '반려 처리되었습니다. 자세한 사항은 시설관리실에 문의하세요.'}</div>
       </div>`;
     }
 
@@ -976,7 +976,7 @@
       </div>
       <div style="margin-bottom:16px;">
         <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px;">📝 접수 내용</div>
-        <div style="background:#f8fafc; border-radius:10px; padding:14px 16px; font-size:14px; color:#334155; line-height:1.7;">${item.description||'—'}</div>
+        <div style="background:#f8fafc; border-radius:10px; padding:14px 16px; font-size:14px; color:#334155; line-height:1.7; white-space:pre-wrap;">${item.description||'—'}</div>
       </div>
       <div style="margin-bottom:16px;">
         <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px;">📷 첨부 사진</div>

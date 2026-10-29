@@ -112,7 +112,7 @@
     /* SECTION */
     .detail-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 14px; }
     .detail-section-title { font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
-    .desc-text { font-size: 14px; color: #334155; line-height: 1.75; }
+    .desc-text { font-size: 14px; color: #334155; line-height: 1.75; white-space: pre-wrap; }
 
     /* PHOTO GALLERY */
     .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 8px; }
@@ -453,14 +453,14 @@
         <div style="font-size:13px;color:#15803d;line-height:1.65;">
           ${item.completed_at ? `<strong>완료 일시:</strong> ${completedAt}<br>` : ''}
           ${item.assigned_to ? `<strong>담당자:</strong> ${item.assigned_to}<br>` : ''}
-          ${item.result_note ? `<br>${item.result_note}` : '처리 결과 내용이 없습니다.'}
+          ${item.result_note ? `<br><span style="white-space:pre-wrap;">${item.result_note}</span>` : '처리 결과 내용이 없습니다.'}
         </div>
         ${getPhotos(item.result_photo_urls)}
       </div>`;
     } else if (item.status === 'rejected') {
       resultPreviewContent = `<div class="result-preview rejected">
         <div class="result-preview-title">🚫 반려 처리</div>
-        <div style="font-size:13px;color:#dc2626;">${item.admin_memo || item.result_note || '반려 처리되었습니다.'}</div>
+        <div style="font-size:13px;color:#dc2626;white-space:pre-wrap;">${item.admin_memo || item.result_note || '반려 처리되었습니다.'}</div>
       </div>`;
     } else if (item.status === 'in_progress') {
       resultPreviewContent = `<div class="result-preview in_progress">
