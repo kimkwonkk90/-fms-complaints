@@ -943,6 +943,7 @@
         <div class="confirm-box ok">
           <div class="confirm-title">✅ 등록자 조치 완료 확인됨</div>
           <div class="confirm-desc">${new Date(item.requester_confirmed_at).toLocaleString('ko-KR')}에 등록자가 현장 확인을 완료했습니다.</div>
+          ${item.requester_confirmed_by ? `<div class="confirm-desc" style="color:#15803d; font-weight:700;">확인자: ${esc(item.requester_confirmed_by)}</div>` : ''}
         </div>` : `
         <div class="confirm-box">
           <div class="confirm-title">✅ 등록자 조치 완료 확인</div>
@@ -1000,7 +1001,7 @@
       .slice().sort((a, b) => a.date.localeCompare(b.date))
       .map(h => ({ date: h.date + 'T00:00:00', text: h.text }));
     const rows = [{ date: item.created_at, text: '신규 접수', auto: true }, ...hist];
-    if (item.requester_confirmed_at) rows.push({ date: item.requester_confirmed_at, text: '등록자 조치 완료 확인', auto: true });
+    if (item.requester_confirmed_at) rows.push({ date: item.requester_confirmed_at, text: '등록자 조치 완료 확인' + (item.requester_confirmed_by ? ` (${item.requester_confirmed_by})` : ''), auto: true });
     return rows;
   }
 
@@ -1017,7 +1018,7 @@
       const { data, error } = await window.sbClient.rpc('confirm_complaint_done', { p_id: id, p_name: name });
       if (error || !data) throw error || new Error('이미 확인되었거나 처리 완료 상태가 아닙니다.');
       const item = allItems.find(i => i.id === id);
-      if (item) item.requester_confirmed_at = Date.now();
+      if (item) { item.requester_confirmed_at = Date.now(); item.requester_confirmed_by = name; }
       openDetail(id);
       showToast('조치 완료 확인이 등록되었습니다.');
     } catch (e) {
