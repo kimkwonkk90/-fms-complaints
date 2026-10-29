@@ -674,6 +674,9 @@
       allItems = (data.data || []).sort((a,b) => b.created_at - a.created_at);
       updateSummary();
       applyFilter();
+      // ?id= 로 진입하면 해당 접수 상세를 바로 연다 (통합시설관제 허브 목록에서 연결)
+      const openId = new URLSearchParams(location.search).get('id');
+      if (openId) openDetail(openId);
     } catch(e) {
       document.getElementById('listWrap').innerHTML = `
         <div class="empty-state">
