@@ -936,7 +936,7 @@
         `<li><span class="tl-dot${r.auto ? ' auto' : ''}"></span><span class="tl-date">${md(r.date)}</span><span class="tl-text">${esc(r.text)}</span></li>`).join('')}</ol>
     </div>`;
 
-    // 등록자 조치 완료 확인 (완료 시)
+    // 등록자 조치 완료 확인 (완료 시 입력 가능, 그 전에는 비활성)
     let confirmHtml = '';
     if (item.status === 'completed') {
       confirmHtml = item.requester_confirmed_at ? `
@@ -950,6 +950,16 @@
           <label class="confirm-chk"><input type="checkbox" id="confirmChk" onchange="syncConfirm()"> 현장 확인 결과 이상이 해소되었습니다.</label>
           <div class="confirm-name"><label for="confirmName">확인자 성명</label><input id="confirmName" placeholder="이름" maxlength="30" oninput="syncConfirm()"></div>
           <button class="confirm-btn" id="confirmBtn" disabled onclick="confirmDone('${item.id}')">조치 완료 확인</button>
+        </div>`;
+    } else if (item.status !== 'rejected') {
+      // 처리 완료 전에는 칸만 보여주고 입력은 막아둔다
+      confirmHtml = `
+        <div class="confirm-box">
+          <div class="confirm-title">✅ 등록자 조치 완료 확인</div>
+          <div class="confirm-desc">시설관리팀의 조치 완료 등록 후 등록자가 현장을 확인합니다. 처리 완료 후 확인할 수 있습니다.</div>
+          <label class="confirm-chk" style="opacity:0.5; cursor:not-allowed;"><input type="checkbox" disabled> 현장 확인 결과 이상이 해소되었습니다.</label>
+          <div class="confirm-name" style="opacity:0.5;"><label>확인자 성명</label><input placeholder="이름" disabled></div>
+          <button class="confirm-btn" disabled>조치 완료 확인</button>
         </div>`;
     }
 
