@@ -155,6 +155,23 @@
       background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
     }
 
+    /* HISTORY (주요 처리 이력) */
+    .hist-list { display: grid; gap: 8px; }
+    .hist-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 34px; gap: 8px; align-items: center; }
+    .hist-row.fixed .form-control { background: #f8fafc; color: #64748b; }
+    .hist-del { width: 34px; height: 34px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; font-size: 14px; }
+    .hist-del:hover { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+    .hist-add { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .hist-chip { border: 1px dashed #16a34a; color: #15803d; background: #f0fdf4; border-radius: 100px; padding: 5px 12px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .hist-chip.solid { border-style: solid; background: #16a34a; color: #fff; }
+    .form-hint { font-size: 11.5px; color: #94a3b8; margin-top: 6px; }
+
+    /* REQUESTER CONFIRM */
+    .ack { border-radius: 12px; padding: 12px 14px; font-size: 13px; display: grid; gap: 6px; }
+    .ack.wait { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
+    .ack.ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; font-weight: 700; }
+    .ack-cancel { background: none; border: none; color: #dc2626; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; text-align: left; padding: 0; }
+
     /* RESULT PREVIEW */
     .result-preview { padding: 16px; border-radius: 12px; }
     .result-preview.completed { background: #f0fdf4; border: 1px solid #bbf7d0; }
@@ -254,6 +271,13 @@
     }
     @media (max-width: 600px) {
       .info-grid { grid-template-columns: 1fr; }
+      .hist-row { grid-template-columns: 1fr 34px; }
+      .hist-row > :first-child { grid-column: 1 / -1; }
+    }
+
+    /* 폭 제한 — 넓은 화면에서 가운데로 모음 */
+    .detail-layout { max-width: 1240px; margin: 0 auto; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+    @media (max-width: 600px) {
       .ticket-header { flex-direction: column; }
     }
   </style>
@@ -378,6 +402,12 @@
   let newResultFiles = [];
   let existingOrigPhotos = [];
   let newOrigFiles = [];
+  let historyDraft = [];          // [{ date: 'YYYY-MM-DD', text }]
+  let clearConfirm = false;       // 등록자 확인 취소 요청 여부
+  const HIST_MIN_ROWS = 3;       // 빈 입력줄 포함 최소 줄 수
+  const HIST_EXAMPLES = ['예: 시설관리실 현장 확인', '예: 자동문 업체 A/S 요청', '예: 업체 방문 수리 후 조치 완료'];
+  const todayStr = () => { const x = new Date(); return new Date(x - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const HIST_QUICK = ['시설관리팀 현장 확인', '업체 A/S 요청', '부품 발주', '업체 방문 수리', '조치 완료'];
 
   function escAttr(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -437,7 +467,6 @@
         <div class="result-preview-title">⚙️ 처리 중</div>
         <div style="font-size:13px;color:#92400e;line-height:1.65;">
           담당자 <strong>${item.assigned_to||'배정 중'}</strong>이 처리하고 있습니다.
-          ${item.progress_note ? `<br><br>${item.progress_note}` : ''}
         </div>
       </div>`;
     } else {
@@ -556,6 +585,17 @@
             </div>
           </div>
 
+          <!-- HISTORY -->
+          <div class="detail-section">
+            <div class="detail-section-title">📌 주요 처리 이력</div>
+            <div class="hist-list" id="histList"></div>
+            <div class="hist-add">
+              <button type="button" class="hist-chip solid" onclick="addHist('')">+ 이력 추가</button>
+              ${HIST_QUICK.map(q => `<button type="button" class="hist-chip" onclick="addHist('${q}')">+ ${q}</button>`).join('')}
+            </div>
+            <div class="form-hint">흐린 글씨는 작성 예시입니다. 날짜를 비워 두면 저장할 때 오늘 날짜가 들어갑니다. 날짜순으로 정렬되어 접수 조회 화면에 표시됩니다.</div>
+          </div>
+
           <!-- RESULT -->
           <div class="detail-section">
             <div class="detail-section-title">📋 처리 결과</div>
@@ -566,10 +606,6 @@
             <div id="resultPreview">${resultPreviewContent}</div>
             <div id="resultEdit" style="display:none;">
               <div class="result-form">
-                <div class="form-group">
-                  <label class="form-label">진행 상황 메모 (처리 중 안내)</label>
-                  <textarea id="progressNote" class="form-control" rows="3" placeholder="처리 중 진행 상황을 입력하세요 (예: 부품 발주 완료, 내일 방문 예정 등)...">${item.progress_note||''}</textarea>
-                </div>
                 <div class="form-group">
                   <label class="form-label">처리 결과 내용</label>
                   <textarea id="resultNote" class="form-control" rows="4" placeholder="처리 결과를 상세히 입력하세요...">${item.result_note||''}</textarea>
@@ -583,10 +619,6 @@
                   </div>
                   <input type="file" id="resultFileInput" accept="image/*" multiple style="display:none;" onchange="handleResultFiles(this.files)">
                   <div class="preview-grid" id="resultPreviewGrid"></div>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">처리 완료 일시</label>
-                  <input type="datetime-local" id="completedAt" class="form-control" value="${item.completed_at ? new Date(item.completed_at).toISOString().slice(0,16) : ''}">
                 </div>
                 <div class="form-group">
                   <label class="form-label">관리자 메모 (내부용)</label>
@@ -647,6 +679,26 @@
             <input type="hidden" id="selectedStatus" value="${item.status||'received'}">
           </div>
 
+          <!-- PROGRESS INFO -->
+          <div class="right-section">
+            <div class="right-title">📋 처리 진행정보</div>
+            <div class="result-form">
+              <div class="form-group">
+                <label class="form-label" for="expectedDate">예상 완료일</label>
+                <input type="date" id="expectedDate" class="form-control" value="${escAttr(item.expected_date)}">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="delayReason">처리 지연 사유</label>
+                <input type="text" id="delayReason" class="form-control" value="${escAttr(item.delay_reason)}" placeholder="예: 부품 입고 대기, 업체 일정 조율">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="completedAt">시설관리팀 조치 완료일</label>
+                <input type="datetime-local" id="completedAt" class="form-control" value="${item.completed_at ? new Date(item.completed_at).toISOString().slice(0,16) : ''}">
+              </div>
+            </div>
+            <div class="form-hint">최근 진행상황 갱신일은 저장할 때 자동으로 기록됩니다.<br>현재: ${item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '—'}</div>
+          </div>
+
           <!-- ASSIGN -->
           <div class="right-section">
             <div class="right-title">👤 담당자 배정</div>
@@ -671,6 +723,12 @@
               <option value="high" ${item.priority==='high'?'selected':''}>🟠 높음</option>
               <option value="urgent" ${item.priority==='urgent'?'selected':''}>🔴 긴급</option>
             </select>
+          </div>
+
+          <!-- REQUESTER CONFIRM -->
+          <div class="right-section">
+            <div class="right-title">✅ 등록자 조치 완료 확인</div>
+            <div id="ackBox"></div>
           </div>
 
           <!-- SAVE -->
@@ -710,6 +768,49 @@
     origUploadArea.addEventListener('dragover', e => { e.preventDefault(); origUploadArea.classList.add('over'); });
     origUploadArea.addEventListener('dragleave', () => origUploadArea.classList.remove('over'));
     origUploadArea.addEventListener('drop', e => { e.preventDefault(); origUploadArea.classList.remove('over'); handleOrigFiles(e.dataTransfer.files); });
+
+    historyDraft = (Array.isArray(item.history) ? item.history : []).map(h => ({ date: h.date || '', text: h.text || '' }));
+    while (historyDraft.length < HIST_MIN_ROWS) historyDraft.push({ date: '', text: '' });
+    clearConfirm = false;
+    renderHistory();
+    renderAck();
+  }
+
+  function renderHistory() {
+    const item = currentItem;
+    const ymd = v => { const x = new Date(v); return isNaN(x) ? '' : new Date(x - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+    const fixedRow = (date, text) => `<div class="hist-row fixed"><input class="form-control" value="${date}" disabled aria-label="날짜"><input class="form-control" value="${text}" disabled aria-label="자동 항목"><span></span></div>`;
+    const rows = historyDraft.map((h, i) => ({ ...h, i })).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+    document.getElementById('histList').innerHTML =
+      fixedRow(ymd(item.created_at), '신규 접수 (자동)') +
+      rows.map((h, pos) => `
+        <div class="hist-row">
+          <input type="date" class="form-control" value="${escAttr(h.date)}" onchange="historyDraft[${h.i}].date=this.value; renderHistory()" aria-label="날짜">
+          <input type="text" class="form-control" id="histText${h.i}" value="${escAttr(h.text)}" oninput="historyDraft[${h.i}].text=this.value" placeholder="${HIST_EXAMPLES[pos] || '처리 내용을 입력하세요'}" aria-label="처리 내용">
+          <button type="button" class="hist-del" onclick="historyDraft.splice(${h.i},1); renderHistory()" aria-label="삭제">✕</button>
+        </div>`).join('') +
+      (item.requester_confirmed_at && !clearConfirm ? fixedRow(ymd(item.requester_confirmed_at), '등록자 조치 완료 확인 (자동)') : '');
+  }
+
+  // 빠른 추가: 비어 있는 줄이 있으면 그 줄을 채우고, 없으면 새 줄을 만든다
+  function addHist(text) {
+    let i = text ? historyDraft.findIndex(h => !h.text.trim()) : -1;
+    if (i === -1) { historyDraft.push({ date: todayStr(), text }); i = historyDraft.length - 1; }
+    else historyDraft[i] = { date: historyDraft[i].date || todayStr(), text };
+    renderHistory();
+    if (!text) document.getElementById('histText' + i)?.focus();
+  }
+
+  function renderAck() {
+    const item = currentItem;
+    const box = document.getElementById('ackBox');
+    if (item.requester_confirmed_at && !clearConfirm) {
+      box.innerHTML = `<div class="ack ok">✓ 확인 완료 · ${new Date(item.requester_confirmed_at).toLocaleString('ko-KR')}
+        <span style="font-weight:600;">확인자: ${escAttr(item.requester_confirmed_by || '—')}</span>
+        <button type="button" class="ack-cancel" onclick="clearConfirm=true; renderAck(); renderHistory()">확인 취소 (재조치 필요 시)</button></div>`;
+    } else {
+      box.innerHTML = `<div class="ack wait">${clearConfirm ? '저장하면 등록자 확인이 취소됩니다.' : item.status === 'completed' ? '등록자 확인 대기 중입니다.' : '처리 완료 후 등록자가 접수 조회 화면에서 확인합니다.'}</div>`;
+    }
   }
 
   function handleResultFiles(files) {
@@ -814,11 +915,9 @@
     const status = document.getElementById('selectedStatus').value;
     const assignedTo = document.getElementById('assignedTo').value;
     const priority = document.getElementById('prioritySelect').value;
-    const progressNoteEl = document.getElementById('progressNote');
     const resultNoteEl = document.getElementById('resultNote');
     const completedAtEl = document.getElementById('completedAt');
     const adminMemoEl = document.getElementById('adminMemo');
-    const progressNote = progressNoteEl ? progressNoteEl.value.trim() : '';
     const resultNote = resultNoteEl ? resultNoteEl.value.trim() : '';
     const completedAtVal = completedAtEl ? completedAtEl.value : '';
     const adminMemo = adminMemoEl ? adminMemoEl.value.trim() : '';
@@ -872,9 +971,16 @@
       status, assigned_to: assignedTo, priority, result_photo_urls: resultPhotoUrls,
       title, type, category, description, photo_urls: origPhotoUrls,
       submitter_name: submitterName, submitter_contact: submitterContact,
-      department, location
+      department, location,
+      expected_date: document.getElementById('expectedDate').value || null,
+      delay_reason: document.getElementById('delayReason').value.trim() || null,
+      history: historyDraft.filter(h => h.text.trim()).map(h => ({ date: h.date || todayStr(), text: h.text.trim() }))
     };
-    if (progressNote) patch.progress_note = progressNote;
+    // 처리 완료가 아니게 되거나 확인 취소 시 등록자 확인 초기화
+    if (clearConfirm || status !== 'completed') {
+      patch.requester_confirmed_at = null;
+      patch.requester_confirmed_by = null;
+    }
     if (resultNote) patch.result_note = resultNote;
     if (adminMemo) patch.admin_memo = adminMemo;
     if (status === 'completed') {

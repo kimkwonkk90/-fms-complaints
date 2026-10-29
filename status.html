@@ -344,6 +344,35 @@
     .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
     .photo-item:hover img { transform: scale(1.06); }
 
+    /* 처리 진행정보 · 처리 이력 · 등록자 확인 */
+    .sec-title { font-size: 12px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; margin-bottom: 8px; }
+    .prog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .prog-cell { background: rgba(255,255,255,0.7); border-radius: 10px; padding: 10px 14px; min-width: 0; }
+    .prog-cell .info-item-val { overflow-wrap: anywhere; }
+    .prog-cell .warn { color: #b45309; }
+    .prog-cell .empty { color: #94a3b8; font-weight: 500; }
+    .timeline { background: #f8fafc; border-radius: 12px; padding: 14px 18px; list-style: none; margin: 0; }
+    .timeline li { display: grid; grid-template-columns: 14px 64px 1fr; gap: 12px; align-items: center; position: relative; padding: 6px 0; font-size: 13.5px; }
+    .timeline li::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: #bbf7d0; }
+    .timeline li:first-child::before { top: 50%; }
+    .timeline li:last-child::before { bottom: 50%; }
+    .timeline li:only-child::before { display: none; }
+    .tl-dot { width: 14px; height: 14px; border-radius: 50%; background: #16a34a; border: 3px solid #dcfce7; position: relative; z-index: 1; }
+    .tl-dot.auto { background: #94a3b8; border-color: #e2e8f0; }
+    .tl-date { color: #64748b; font-weight: 600; }
+    .tl-text { color: #1e293b; font-weight: 600; min-width: 0; }
+    .confirm-box { border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; margin-bottom: 16px; }
+    .confirm-box.ok { background: #f0fdf4; border-color: #bbf7d0; }
+    .confirm-title { font-size: 14px; font-weight: 800; color: #0f172a; }
+    .confirm-box.ok .confirm-title { color: #15803d; }
+    .confirm-desc { font-size: 12.5px; color: #64748b; }
+    .confirm-chk { display: flex; gap: 9px; align-items: center; font-size: 13.5px; font-weight: 600; color: #334155; cursor: pointer; }
+    .confirm-chk input { width: 18px; height: 18px; accent-color: #16a34a; }
+    .confirm-name { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: #64748b; }
+    .confirm-name input { width: 160px; padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+    .confirm-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: #15803d; color: #fff; font-size: 14.5px; font-weight: 800; cursor: pointer; }
+    .confirm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
     /* TOAST */
     .toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     .toast {
@@ -380,7 +409,8 @@
       .status-summary-inner { grid-template-columns: repeat(2,1fr); }
       .complaint-card { grid-template-columns: 1fr; }
       .card-num { display: none; }
-      .info-grid { grid-template-columns: 1fr; }
+      .info-grid, .prog-grid { grid-template-columns: 1fr; }
+      .timeline li { grid-template-columns: 14px 52px 1fr; }
       .modal-body { padding: 20px; }
       .modal-header { padding: 20px; }
       .footer { padding: 28px 20px; }
@@ -847,33 +877,20 @@
     const updatedAt = item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '—';
     const completedAt = item.completed_at ? new Date(item.completed_at).toLocaleString('ko-KR') : '—';
 
-    // Result box
+    // Result box (처리 중/완료는 처리 진행정보 박스로 표시)
     let resultBox = '';
     if (item.status === 'received') {
       resultBox = `<div class="result-box pending"><div class="result-box-title">⏳ 처리 대기 중</div><div class="result-text">접수가 완료되었습니다. 담당자 배정 후 처리가 시작됩니다.</div></div>`;
-    } else if (item.status === 'in_progress') {
-      resultBox = `<div class="result-box in-progress">
-        <div class="result-box-title">🔧 처리 중</div>
-        <div class="result-text"><strong>${item.assigned_to||'배정 중'}</strong>이 현재 처리 중입니다. 완료 시 안내해 드리겠습니다.
-          ${item.progress_note ? `<br><br><strong style="color:#dc2626;">진행 상황:</strong><br><span style="color:#dc2626;">${item.progress_note}</span>` : ''}
+    } else if (item.status === 'in_progress' || item.status === 'completed') {
+      const cell = (label, v, warn) => `<div class="prog-cell"><div class="info-item-label">${label}</div><div class="info-item-val ${v ? (warn ? 'warn' : '') : 'empty'}">${v ? esc(v) : '—'}</div></div>`;
+      resultBox = `<div class="result-box ${item.status === 'completed' ? 'completed' : 'in-progress'}">
+        <div class="result-box-title">📋 처리 진행정보</div>
+        <div class="prog-grid">
+          ${cell('최근 진행상황 갱신일', item.updated_at ? updatedAt : '')}
+          ${cell('처리 지연 사유', item.delay_reason, true)}
+          ${cell('예상 완료일', item.expected_date ? new Date(item.expected_date + 'T00:00:00').toLocaleDateString('ko-KR') : '')}
+          ${cell('시설관리팀 조치 완료일', item.completed_at ? completedAt : '')}
         </div>
-      </div>`;
-    } else if (item.status === 'completed') {
-      const resultPhotoHtml = (() => {
-        try {
-          const urls = typeof item.result_photo_urls === 'string' ? JSON.parse(item.result_photo_urls) : (item.result_photo_urls || []);
-          if (!Array.isArray(urls) || urls.length === 0) return '';
-          return `<div class="photo-gallery">${urls.map(u => `<div class="photo-item"><img src="${u}" alt="처리 결과 사진"></div>`).join('')}</div>`;
-        } catch(e) { return ''; }
-      })();
-      resultBox = `<div class="result-box completed">
-        <div class="result-box-title">✅ 처리 완료</div>
-        <div class="result-text">
-          <strong>완료 일시:</strong> ${completedAt}<br>
-          <strong>담당자:</strong> ${item.assigned_to||'—'}<br>
-          ${item.result_note ? `<br><strong style="color:#dc2626;">처리 결과:</strong><br><span style="color:#dc2626;">${item.result_note}</span>` : ''}
-        </div>
-        ${resultPhotoHtml}
       </div>`;
     } else if (item.status === 'rejected') {
       resultBox = `<div class="result-box rejected">
@@ -891,6 +908,51 @@
       } catch(e) { return '<div style="color:#94a3b8; font-size:13px;">사진 없음</div>'; }
     })();
 
+    // 처리 결과 (완료 시)
+    let resultHtml = '';
+    if (item.status === 'completed') {
+      const urls = (() => {
+        try {
+          const arr = typeof item.result_photo_urls === 'string' ? JSON.parse(item.result_photo_urls) : (item.result_photo_urls || []);
+          return Array.isArray(arr) ? arr : [];
+        } catch(e) { return []; }
+      })();
+      if (item.result_note || urls.length) {
+        resultHtml = `<div style="margin-bottom:16px;">
+          <div class="sec-title">🛠️ 처리 결과</div>
+          <div class="result-box completed" style="margin-bottom:0;">
+            ${item.result_note ? `<div class="result-text" style="color:#dc2626; font-weight:700; white-space:pre-wrap;">${esc(item.result_note)}</div>` : ''}
+            ${urls.length ? `<div class="photo-gallery">${urls.map(u => `<div class="photo-item"><img src="${u}" alt="처리 결과 사진"></div>`).join('')}</div>` : ''}
+          </div>
+        </div>`;
+      }
+    }
+
+    // 주요 처리 이력
+    const md = v => { const x = new Date(v); return `${x.getMonth() + 1}. ${x.getDate()}.`; };
+    const timelineHtml = `<div style="margin-bottom:16px;">
+      <div class="sec-title">📌 주요 처리 이력</div>
+      <ol class="timeline">${timelineOf(item).map(r =>
+        `<li><span class="tl-dot${r.auto ? ' auto' : ''}"></span><span class="tl-date">${md(r.date)}</span><span class="tl-text">${esc(r.text)}</span></li>`).join('')}</ol>
+    </div>`;
+
+    // 등록자 조치 완료 확인 (완료 시)
+    let confirmHtml = '';
+    if (item.status === 'completed') {
+      confirmHtml = item.requester_confirmed_at ? `
+        <div class="confirm-box ok">
+          <div class="confirm-title">✅ 등록자 조치 완료 확인됨</div>
+          <div class="confirm-desc">${new Date(item.requester_confirmed_at).toLocaleString('ko-KR')}에 등록자가 현장 확인을 완료했습니다.</div>
+        </div>` : `
+        <div class="confirm-box">
+          <div class="confirm-title">✅ 등록자 조치 완료 확인</div>
+          <div class="confirm-desc">시설관리팀의 조치 완료 등록 후 등록자가 현장을 확인합니다.</div>
+          <label class="confirm-chk"><input type="checkbox" id="confirmChk" onchange="syncConfirm()"> 현장 확인 결과 이상이 해소되었습니다.</label>
+          <div class="confirm-name"><label for="confirmName">확인자 성명</label><input id="confirmName" placeholder="이름" maxlength="30" oninput="syncConfirm()"></div>
+          <button class="confirm-btn" id="confirmBtn" disabled onclick="confirmDone('${item.id}')">조치 완료 확인</button>
+        </div>`;
+    }
+
     document.getElementById('modalBody').innerHTML = `
       <div class="progress-steps">${progSteps}</div>
       ${resultBox}
@@ -900,19 +962,67 @@
         <div class="info-item"><div class="info-item-label">위치</div><div class="info-item-val">${item.location||'—'}</div></div>
         <div class="info-item"><div class="info-item-label">접수 일시</div><div class="info-item-val">${createdAt}</div></div>
         ${item.assigned_to ? `<div class="info-item"><div class="info-item-label">담당자</div><div class="info-item-val">${item.assigned_to}</div></div>` : ''}
-        ${item.status==='completed' ? `<div class="info-item"><div class="info-item-label">완료 일시</div><div class="info-item-val">${completedAt}</div></div>` : ''}
       </div>
       <div style="margin-bottom:16px;">
         <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px;">📝 접수 내용</div>
         <div style="background:#f8fafc; border-radius:10px; padding:14px 16px; font-size:14px; color:#334155; line-height:1.7;">${item.description||'—'}</div>
       </div>
-      <div>
+      <div style="margin-bottom:16px;">
         <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px;">📷 첨부 사진</div>
         ${photoHtml}
-      </div>`;
+      </div>
+      ${resultHtml}
+      ${timelineHtml}
+      ${confirmHtml}`;
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  // 처리 이력 = 신규 접수(자동) + 관리자 입력 이력(날짜순) + 등록자 확인(자동)
+  function timelineOf(item) {
+    const hist = (Array.isArray(item.history) ? item.history : [])
+      .filter(h => h && h.date && h.text)
+      .slice().sort((a, b) => a.date.localeCompare(b.date))
+      .map(h => ({ date: h.date + 'T00:00:00', text: h.text }));
+    const rows = [{ date: item.created_at, text: '신규 접수', auto: true }, ...hist];
+    if (item.requester_confirmed_at) rows.push({ date: item.requester_confirmed_at, text: '등록자 조치 완료 확인', auto: true });
+    return rows;
+  }
+
+  function syncConfirm() {
+    document.getElementById('confirmBtn').disabled =
+      !(document.getElementById('confirmChk').checked && document.getElementById('confirmName').value.trim());
+  }
+
+  async function confirmDone(id) {
+    const btn = document.getElementById('confirmBtn');
+    const name = document.getElementById('confirmName').value.trim();
+    btn.disabled = true;
+    try {
+      const { data, error } = await window.sbClient.rpc('confirm_complaint_done', { p_id: id, p_name: name });
+      if (error || !data) throw error || new Error('이미 확인되었거나 처리 완료 상태가 아닙니다.');
+      const item = allItems.find(i => i.id === id);
+      if (item) item.requester_confirmed_at = Date.now();
+      openDetail(id);
+      showToast('조치 완료 확인이 등록되었습니다.');
+    } catch (e) {
+      console.error('[confirmDone]', e);
+      showToast('확인 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.', true);
+      btn.disabled = false;
+    }
+  }
+
+  function showToast(msg, isError) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (isError ? ' error' : '');
+    el.innerHTML = `<div style="font-size:13px;font-weight:700;color:#0f172a;">${esc(msg)}</div>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
   }
 
   function closeModal(e) {
