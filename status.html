@@ -887,7 +887,7 @@
         <div class="result-box-title">📋 처리 진행정보</div>
         <div class="prog-grid">
           ${cell('최근 진행상황 갱신일', item.updated_at ? updatedAt : '')}
-          ${cell('처리 지연 사유', item.delay_reason, true)}
+          ${cell('처리 진행 현황', item.delay_reason, true)}
           ${cell('예상 완료일', item.expected_date ? new Date(item.expected_date + 'T00:00:00').toLocaleDateString('ko-KR') : '')}
           ${cell('시설관리팀 조치 완료일', item.completed_at ? completedAt : '')}
         </div>

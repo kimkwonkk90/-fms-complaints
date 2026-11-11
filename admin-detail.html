@@ -406,7 +406,9 @@
   let clearConfirm = false;       // 등록자 확인 취소 요청 여부
   const HIST_MIN_ROWS = 3;       // 빈 입력줄 포함 최소 줄 수
   const HIST_EXAMPLES = ['예: 시설관리실 현장 확인', '예: 자동문 업체 A/S 요청', '예: 업체 방문 수리 후 조치 완료'];
-  const todayStr = () => { const x = new Date(); return new Date(x - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  // 브라우저 현지 시간(한국 시간) 기준 'YYYY-MM-DDTHH:mm'
+  const localStamp = (v = Date.now()) => { const x = new Date(v); return new Date(x - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); };
+  const todayStr = () => localStamp().slice(0, 10);
   const HIST_QUICK = ['시설관리팀 현장 확인', '업체 A/S 요청', '부품 발주', '업체 방문 수리', '조치 완료'];
 
   function escAttr(s) {
@@ -688,12 +690,12 @@
                 <input type="date" id="expectedDate" class="form-control" value="${escAttr(item.expected_date)}">
               </div>
               <div class="form-group">
-                <label class="form-label" for="delayReason">처리 지연 사유</label>
-                <input type="text" id="delayReason" class="form-control" value="${escAttr(item.delay_reason)}" placeholder="예: 부품 입고 대기, 업체 일정 조율">
+                <label class="form-label" for="delayReason">처리 진행 현황</label>
+                <input type="text" id="delayReason" class="form-control" value="${escAttr(item.delay_reason)}" placeholder="예: 업체 A/S 요청, 부품 입고 대기">
               </div>
               <div class="form-group">
                 <label class="form-label" for="completedAt">시설관리팀 조치 완료일</label>
-                <input type="datetime-local" id="completedAt" class="form-control" value="${item.completed_at ? new Date(item.completed_at).toISOString().slice(0,16) : ''}">
+                <input type="datetime-local" id="completedAt" class="form-control" value="${item.completed_at ? localStamp(item.completed_at) : ''}">
               </div>
             </div>
             <div class="form-hint">최근 진행상황 갱신일은 저장할 때 자동으로 기록됩니다.<br>현재: ${item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '—'}</div>
@@ -786,10 +788,27 @@
       rows.map((h, pos) => `
         <div class="hist-row">
           <input type="date" class="form-control" value="${escAttr(h.date)}" onchange="historyDraft[${h.i}].date=this.value; renderHistory()" aria-label="날짜">
-          <input type="text" class="form-control" id="histText${h.i}" value="${escAttr(h.text)}" oninput="historyDraft[${h.i}].text=this.value" placeholder="${HIST_EXAMPLES[pos] || '처리 내용을 입력하세요'}" aria-label="처리 내용">
+          <input type="text" class="form-control" id="histText${h.i}" value="${escAttr(h.text)}" oninput="historyDraft[${h.i}].text=this.value; syncProgress()" placeholder="${HIST_EXAMPLES[pos] || '처리 내용을 입력하세요'}" aria-label="처리 내용">
           <button type="button" class="hist-del" onclick="historyDraft.splice(${h.i},1); renderHistory()" aria-label="삭제">✕</button>
         </div>`).join('') +
       (item.requester_confirmed_at && !clearConfirm ? fixedRow(ymd(item.requester_confirmed_at), '등록자 조치 완료 확인 (자동)') : '');
+    syncProgress();
+  }
+
+  // 처리 진행 현황: 처리 완료 상태이거나 이력에 '조치 완료'가 있으면 '처리 완료', 아니면 이력 중 가장 최근 항목
+  // byStatus: 처리 상태를 직접 바꾼 경우엔 상태만 보고 판단한다 (처리 중으로 되돌리면 '처리 완료'를 지움)
+  function syncProgress(byStatus) {
+    const el = document.getElementById('delayReason');
+    if (document.getElementById('selectedStatus').value === 'completed' || (!byStatus && historyDraft.some(h => h.text.includes('조치 완료')))) {
+      el.value = '처리 완료';
+      return;
+    }
+    const last = historyDraft
+      .filter(h => h.text.trim() && !h.text.includes('조치 완료'))
+      .sort((a, b) => (a.date || todayStr()).localeCompare(b.date || todayStr()))
+      .pop();
+    if (last) el.value = last.text.trim();
+    else if (el.value === '처리 완료') el.value = '';
   }
 
   // 빠른 추가: 비어 있는 줄이 있으면 그 줄을 채우고, 없으면 새 줄을 만든다
@@ -903,8 +922,9 @@
     document.querySelectorAll('.status-option').forEach(o => o.classList.remove('selected'));
     document.getElementById('opt-' + status)?.classList.add('selected');
     document.getElementById('selectedStatus').value = status;
+    syncProgress(true);
     if (status === 'completed') {
-      const now = new Date().toISOString().slice(0,16);
+      const now = localStamp();
       const el = document.getElementById('completedAt');
       if (el && !el.value) el.value = now;
       switchTab('edit');

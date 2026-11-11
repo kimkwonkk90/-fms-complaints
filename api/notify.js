@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     if (k === 'status') v = STATUS_KR[v] || v;
     if (k === 'type') v = TYPE_KR[v] || v;
     if (k === 'priority') v = PRIORITY_KR[v] || v;
-    if (k === 'created_at') { try { v = new Date(Number(v)).toLocaleString('ko-KR'); } catch (e) {} }
+    if (k === 'created_at') { try { v = new Date(Number(v)).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }); } catch (e) {} }
     rowsHtml += '<tr><td style="padding:7px 12px;background:#f7f7f9;font-weight:600;border:1px solid #ececf0;white-space:nowrap;color:#444">'
       + esc(LABELS[k]) + '</td><td style="padding:7px 12px;border:1px solid #ececf0;color:#222">' + esc(v) + '</td></tr>';
   });
