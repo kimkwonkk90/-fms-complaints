@@ -238,7 +238,7 @@
             <button class="topbar-btn topbar-btn-outline" onclick="addRecipientRows(1)" style="font-size:12px; padding:6px 12px;">
               <i class="fas fa-plus"></i> 행 추가
             </button>
-            <button class="topbar-btn topbar-btn-primary" onclick="saveRecipients()" style="font-size:12px; padding:6px 12px;">
+            <button id="saveRecipientsBtn" class="topbar-btn topbar-btn-primary" onclick="saveRecipients()" style="font-size:12px; padding:6px 12px;">
               <i class="fas fa-save"></i> 저장
             </button>
           </div>
@@ -412,11 +412,24 @@
     });
     const nonEmpty = rows.filter(function (r) { return r.name || r.department || r.email; });
     const invalid = nonEmpty.filter(function (r) { return !r.email || r.email.indexOf('@') === -1; });
-    const valid = nonEmpty.filter(function (r) { return r.email && r.email.indexOf('@') !== -1; });
+    // 같은 메일주소는 한 번만 저장 (먼저 나온 행 기준)
+    const seen = {};
+    const valid = nonEmpty.filter(function (r) {
+      if (!r.email || r.email.indexOf('@') === -1) return false;
+      const key = r.email.toLowerCase();
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
 
     if (invalid.length && !confirm('메일주소가 비어있거나 형식이 올바르지 않은 행이 ' + invalid.length + '개 있습니다. 해당 행은 제외하고 저장할까요?')) {
       return;
     }
+
+    // 저장 중 버튼을 다시 누르면 삭제→등록이 겹쳐 실행되어 중복이 생기므로 막는다
+    const saveBtn = document.getElementById('saveRecipientsBtn');
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true;
 
     try {
       const existingRes = await fetch('tables/fms_notify_recipients?limit=1000');
@@ -440,6 +453,8 @@
     } catch (e) {
       console.error(e);
       showToast('오류', (e && e.message) || '저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+      saveBtn.disabled = false;
     }
   }
 </script>
