@@ -154,6 +154,18 @@
     }
     .row-del-btn:hover { color: #ef4444; }
 
+    /* 시설관리실 / FM사 좌우 분할 */
+    .sheet-groups { display: grid; grid-template-columns: 1fr 1fr; }
+    .sheet-group + .sheet-group { border-left: 1px solid #e2e8f0; }
+    .sheet-group-head {
+      padding: 10px 16px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 14px; font-weight: 800; color: #14532d; border-bottom: 1px solid #e2e8f0;
+    }
+    @media (max-width: 1100px) {
+      .sheet-groups { grid-template-columns: 1fr; }
+      .sheet-group + .sheet-group { border-left: none; border-top: 1px solid #e2e8f0; }
+    }
+
     /* TOAST */
     .toast-wrap { position: fixed; top: 70px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
     .toast { background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 13px 16px; display: flex; align-items: flex-start; gap: 10px; min-width: 260px; border-left: 3px solid #16a34a; animation: slideIn 0.3s ease; }
@@ -235,27 +247,41 @@
         <div class="card-header">
           <span class="card-title">📧 메일 발송 대상</span>
           <div style="display:flex; gap:8px;">
-            <button class="topbar-btn topbar-btn-outline" onclick="addRecipientRows(1)" style="font-size:12px; padding:6px 12px;">
-              <i class="fas fa-plus"></i> 행 추가
-            </button>
             <button id="saveRecipientsBtn" class="topbar-btn topbar-btn-primary" onclick="saveRecipients()" style="font-size:12px; padding:6px 12px;">
               <i class="fas fa-save"></i> 저장
             </button>
           </div>
         </div>
-        <p class="card-desc">신규 접수 알림메일을 받을 대상을 등록하세요. 엑셀에서 표를 복사해 셀에 붙여넣으면 자동으로 채워집니다.</p>
-        <div class="table-wrap">
-          <table id="recipientSheet">
-            <thead>
-              <tr>
-                <th contenteditable="true" spellcheck="false">성명</th>
-                <th contenteditable="true" spellcheck="false">부서</th>
-                <th contenteditable="true" spellcheck="false">메일주소</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="recipientSheetBody"></tbody>
-          </table>
+        <p class="card-desc">신규 접수 알림메일을 받을 대상을 등록하세요. 두 분류 모두 메일을 받습니다. 엑셀에서 표를 복사해 셀에 붙여넣으면 자동으로 채워집니다.</p>
+        <div class="sheet-groups">
+          <div class="sheet-group" data-category="시설관리실">
+            <div class="sheet-group-head">
+              <span>시설관리실</span>
+              <button class="topbar-btn topbar-btn-outline" onclick="addRecipientRows(this, 1)" style="font-size:12px; padding:4px 10px;">
+                <i class="fas fa-plus"></i> 행 추가
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th contenteditable="true" spellcheck="false">성명</th><th contenteditable="true" spellcheck="false">부서</th><th contenteditable="true" spellcheck="false">메일주소</th><th style="width:40px;"></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="sheet-group" data-category="FM사">
+            <div class="sheet-group-head">
+              <span>FM사</span>
+              <button class="topbar-btn topbar-btn-outline" onclick="addRecipientRows(this, 1)" style="font-size:12px; padding:4px 10px;">
+                <i class="fas fa-plus"></i> 행 추가
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th contenteditable="true" spellcheck="false">성명</th><th contenteditable="true" spellcheck="false">부서</th><th contenteditable="true" spellcheck="false">메일주소</th><th style="width:40px;"></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -342,12 +368,23 @@
     return tr;
   }
 
-  function addRecipientRow(values) {
-    document.getElementById('recipientSheetBody').appendChild(buildRecipientRow(values));
+  // 분류(시설관리실 / FM사)별 표의 tbody
+  function groupBody(category) {
+    return document.querySelector('.sheet-group[data-category="' + category + '"] tbody');
   }
 
-  function addRecipientRows(n) {
-    for (let i = 0; i < n; i++) addRecipientRow();
+  function addRecipientRows(btn, n) {
+    const tbody = btn.closest('.sheet-group').querySelector('tbody');
+    for (let i = 0; i < n; i++) tbody.appendChild(buildRecipientRow());
+  }
+
+  function fillGroup(category, items) {
+    const tbody = groupBody(category);
+    tbody.innerHTML = '';
+    items.forEach(function (item) {
+      tbody.appendChild(buildRecipientRow([item.name || '', item.department || '', item.email || '']));
+    });
+    for (let i = items.length; i < RECIPIENT_MIN_ROWS; i++) tbody.appendChild(buildRecipientRow());
   }
 
   // 셀에 여러 줄/여러 칸(엑셀 표)을 붙여넣으면 현재 위치부터 자동으로 채워짐.
@@ -361,7 +398,7 @@
     if (rows.length <= 1 && rows[0].indexOf('\t') === -1) return;
     e.preventDefault();
 
-    const tbody = document.getElementById('recipientSheetBody');
+    const tbody = tr.parentNode;
     const trList = Array.prototype.slice.call(tbody.children);
     const startIdx = trList.indexOf(tr);
 
@@ -382,33 +419,32 @@
   }
 
   async function loadRecipients() {
-    const tbody = document.getElementById('recipientSheetBody');
-    tbody.innerHTML = '';
+    let items = [];
     try {
       const res = await fetch('tables/fms_notify_recipients?limit=1000');
       const data = await res.json();
       // db.js 는 목록을 항상 created_at 내림차순으로 주므로, 저장(전체교체) 시
       // 입력했던 순서를 그대로 보여주려면 뒤집어야 한다.
-      const items = (data.data || []).slice().reverse();
-      items.forEach(function (item) {
-        addRecipientRow([item.name || '', item.department || '', item.email || '']);
-      });
-      addRecipientRows(Math.max(0, RECIPIENT_MIN_ROWS - items.length));
+      items = (data.data || []).slice().reverse();
     } catch (e) {
       console.error(e);
-      addRecipientRows(RECIPIENT_MIN_ROWS);
     }
+    fillGroup('시설관리실', items.filter(function (i) { return i.category === '시설관리실'; }));
+    fillGroup('FM사', items.filter(function (i) { return i.category !== '시설관리실'; }));
   }
 
   async function saveRecipients() {
-    const tbody = document.getElementById('recipientSheetBody');
-    const rows = Array.prototype.map.call(tbody.children, function (tr) {
-      const inputs = tr.querySelectorAll('input');
-      return {
-        name: inputs[0].value.trim(),
-        department: inputs[1].value.trim(),
-        email: inputs[2].value.trim()
-      };
+    const rows = [];
+    document.querySelectorAll('.sheet-group').forEach(function (group) {
+      group.querySelectorAll('tbody tr').forEach(function (tr) {
+        const inputs = tr.querySelectorAll('input');
+        rows.push({
+          name: inputs[0].value.trim(),
+          department: inputs[1].value.trim(),
+          email: inputs[2].value.trim(),
+          category: group.dataset.category
+        });
+      });
     });
     const nonEmpty = rows.filter(function (r) { return r.name || r.department || r.email; });
     const invalid = nonEmpty.filter(function (r) { return !r.email || r.email.indexOf('@') === -1; });
