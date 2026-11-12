@@ -371,7 +371,7 @@
         <span class="nav-badge" id="navDeleted">0</span>
       </div>
       <div class="nav-section-title">시스템</div>
-      <a href="admin-recipients.html" class="nav-item">
+      <a href="admin-recipients.html" class="nav-item" id="navRecipients" style="display:none;">
         <span class="nav-icon">📧</span> 메일 발송 대상
       </a>
       <a href="index.html" class="nav-item" target="_blank">
@@ -543,6 +543,8 @@
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     set('adminName', name);
     set('adminRole', '관리자');
+    // 메일 발송 대상 메뉴는 슈퍼관리자에게만 보임
+    window.sbClient.rpc('fms_is_super').then(function (r) { if (r.data === true) document.getElementById('navRecipients').style.display = ''; });
     set('adminAvatar', name[0].toUpperCase());
   })();
 

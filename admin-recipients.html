@@ -153,6 +153,9 @@
       color: #cbd5e1; cursor: pointer; transition: color 0.2s;
     }
     .row-del-btn:hover { color: #ef4444; }
+    /* 일반관리자: 조회만 가능 */
+    .role-select { padding: 6px 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; color: #1e293b; background: #fff; }
+    .role-select:focus { outline: none; border-color: #16a34a; }
 
     /* 시설관리실 / FM사 좌우 분할 */
     .sheet-groups { display: grid; grid-template-columns: 1fr 1fr; }
@@ -252,7 +255,7 @@
             </button>
           </div>
         </div>
-        <p class="card-desc">신규 접수 알림메일을 받을 대상을 등록하세요. 두 분류 모두 메일을 받습니다. 엑셀에서 표를 복사해 셀에 붙여넣으면 자동으로 채워집니다.</p>
+        <p class="card-desc">신규 접수 알림메일을 받을 대상을 등록하세요. 두 분류 모두 메일을 받습니다. 권한이 슈퍼관리자인 사람은 같은 메일주소로 로그인하면 이 화면을 보고 수정할 수 있습니다. 엑셀에서 표를 복사해 셀에 붙여넣으면 자동으로 채워집니다.</p>
         <div class="sheet-groups">
           <div class="sheet-group" data-category="시설관리실">
             <div class="sheet-group-head">
@@ -263,7 +266,7 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th contenteditable="true" spellcheck="false">성명</th><th contenteditable="true" spellcheck="false">부서</th><th contenteditable="true" spellcheck="false">메일주소</th><th style="width:40px;"></th></tr></thead>
+                <thead><tr><th contenteditable="true" spellcheck="false">성명</th><th contenteditable="true" spellcheck="false">부서</th><th contenteditable="true" spellcheck="false">메일주소</th><th style="width:120px;">권한</th><th style="width:40px;"></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -277,7 +280,7 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th contenteditable="true" spellcheck="false">성명</th><th contenteditable="true" spellcheck="false">부서</th><th contenteditable="true" spellcheck="false">메일주소</th><th style="width:40px;"></th></tr></thead>
+                <thead><tr><th contenteditable="true" spellcheck="false">성명</th><th contenteditable="true" spellcheck="false">부서</th><th contenteditable="true" spellcheck="false">메일주소</th><th style="width:120px;">권한</th><th style="width:40px;"></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -291,6 +294,8 @@
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
+  let myEmail = '';
+
   // 인증 확인 (Supabase Auth 세션)
   (async () => {
     const { data } = await window.sbClient.auth.getSession();
@@ -299,7 +304,11 @@
     const name = (data.session.user.user_metadata && data.session.user.user_metadata.name) || email.split('@')[0];
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     set('adminName', name);
-    set('adminRole', '관리자');
+    // 메일 발송 대상은 슈퍼관리자 전용
+    const { data: isSuper } = await window.sbClient.rpc('fms_is_super');
+    if (isSuper !== true) { location.replace('admin-dashboard.html'); return; }
+    myEmail = email.toLowerCase();
+    set('adminRole', '슈퍼 관리자');
     set('adminAvatar', name[0].toUpperCase());
     loadRecipients();
   })();
@@ -343,7 +352,7 @@
   // ===== 메일 발송 대상 시트 =====
   const RECIPIENT_MIN_ROWS = 15;
 
-  function buildRecipientRow(values) {
+  function buildRecipientRow(values, role) {
     values = values || ['', '', ''];
     const tr = document.createElement('tr');
     values.forEach(function (val, ci) {
@@ -356,6 +365,15 @@
       td.appendChild(input);
       tr.appendChild(td);
     });
+    const tdRole = document.createElement('td');
+    tdRole.style.padding = '0 8px';
+    const roleSel = document.createElement('select');
+    roleSel.className = 'role-select';
+    roleSel.innerHTML = '<option value="general">일반관리자</option><option value="super">슈퍼관리자</option>';
+    roleSel.value = role === 'super' ? 'super' : 'general';
+    tdRole.appendChild(roleSel);
+    tr.appendChild(tdRole);
+
     const tdDel = document.createElement('td');
     tdDel.style.textAlign = 'center';
     const delBtn = document.createElement('button');
@@ -382,7 +400,7 @@
     const tbody = groupBody(category);
     tbody.innerHTML = '';
     items.forEach(function (item) {
-      tbody.appendChild(buildRecipientRow([item.name || '', item.department || '', item.email || '']));
+      tbody.appendChild(buildRecipientRow([item.name || '', item.department || '', item.email || ''], item.role));
     });
     for (let i = items.length; i < RECIPIENT_MIN_ROWS; i++) tbody.appendChild(buildRecipientRow());
   }
@@ -442,7 +460,8 @@
           name: inputs[0].value.trim(),
           department: inputs[1].value.trim(),
           email: inputs[2].value.trim(),
-          category: group.dataset.category
+          category: group.dataset.category,
+          role: tr.querySelector('select').value
         });
       });
     });
@@ -458,6 +477,15 @@
       return true;
     });
 
+    if (!valid.some(function (r) { return r.role === 'super'; })) {
+      showToast('저장할 수 없음', '슈퍼관리자가 최소 1명은 있어야 합니다.', 'error');
+      return;
+    }
+    if (!valid.some(function (r) { return r.role === 'super' && r.email.toLowerCase() === myEmail; })
+        && !confirm('내 메일주소가 슈퍼관리자로 저장되지 않습니다. 저장하면 이 화면에 더 이상 들어올 수 없습니다. 계속할까요?')) {
+      return;
+    }
+
     if (invalid.length && !confirm('메일주소가 비어있거나 형식이 올바르지 않은 행이 ' + invalid.length + '개 있습니다. 해당 행은 제외하고 저장할까요?')) {
       return;
     }
@@ -470,18 +498,29 @@
     try {
       const existingRes = await fetch('tables/fms_notify_recipients?limit=1000');
       const existingData = await existingRes.json();
+      if (!existingRes.ok) throw new Error('기존 목록을 불러오지 못해 저장을 중단했습니다. 새로고침 후 다시 시도하세요.');
       const existing = existingData.data || [];
-      for (const item of existing) {
-        const delRes = await fetch('tables/fms_notify_recipients/' + item.id, { method: 'DELETE' });
-        if (!delRes.ok) throw new Error('기존 데이터 삭제 실패 (' + delRes.status + ') ' + (await describeError(delRes)));
+      // 저장하면 빠지게 되는 사람이 있으면 명단을 보여주고 확인받는다
+      const keep = {};
+      valid.forEach(function (r) { keep[r.email.toLowerCase()] = true; });
+      const removed = existing.filter(function (item) { return !keep[String(item.email || '').trim().toLowerCase()]; });
+      if (removed.length && !confirm('저장하면 아래 ' + removed.length + '명이 메일 발송 대상에서 삭제됩니다. 계속할까요?\n\n'
+          + removed.map(function (item) { return '- ' + (item.name || '(이름 없음)') + ' ' + (item.email || ''); }).join('\n'))) {
+        return;
       }
+      // 새 목록을 먼저 모두 등록하고, 전부 성공한 뒤에만 예전 목록을 지운다.
+      // (중간에 실패해도 기존 인원이 사라지지 않도록)
       for (const r of valid) {
         const postRes = await fetch('tables/fms_notify_recipients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(r)
         });
-        if (!postRes.ok) throw new Error(r.email + ' 등록 실패 (' + postRes.status + ') ' + (await describeError(postRes)));
+        if (!postRes.ok) throw new Error(r.email + ' 등록 실패 (' + postRes.status + ') ' + (await describeError(postRes)) + ' — 기존 목록은 지우지 않았습니다.');
+      }
+      for (const item of existing) {
+        const delRes = await fetch('tables/fms_notify_recipients/' + item.id, { method: 'DELETE' });
+        if (!delRes.ok) throw new Error('예전 목록 정리 실패 (' + delRes.status + ') ' + (await describeError(delRes)) + ' — 새로고침 후 다시 저장하세요.');
       }
       showToast('저장 완료', valid.length + '명 등록되었습니다.', 'success');
       // 저장 직후 목록을 다시 불러와 시트를 새로 그리지 않는다 — 이미 입력한

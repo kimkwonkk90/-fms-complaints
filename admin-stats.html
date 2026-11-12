@@ -128,7 +128,7 @@
       <a href="admin-dashboard.html" class="nav-item"><span class="nav-icon">📊</span> 대시보드</a>
       <a href="admin-stats.html" class="nav-item active"><span class="nav-icon">📈</span> 통계 분석</a>
       <div class="nav-section-title">시스템</div>
-      <a href="admin-recipients.html" class="nav-item"><span class="nav-icon">📧</span> 메일 발송 대상</a>
+      <a href="admin-recipients.html" class="nav-item" id="navRecipients" style="display:none;"><span class="nav-icon">📧</span> 메일 발송 대상</a>
       <a href="index.html" class="nav-item" target="_blank"><span class="nav-icon">🌐</span> 사용자 사이트</a>
     </nav>
     <div class="sidebar-bottom">
@@ -246,6 +246,8 @@
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     set('adminName', name);
     set('adminRole', '관리자');
+    // 메일 발송 대상 메뉴는 슈퍼관리자에게만 보임
+    window.sbClient.rpc('fms_is_super').then(function (r) { if (r.data === true) document.getElementById('navRecipients').style.display = ''; });
     set('adminAvatar', name[0].toUpperCase());
   })();
   async function logout() { if (confirm('로그아웃 하시겠습니까?')) { await window.sbClient.auth.signOut(); location.href = 'admin-login.html'; } }
